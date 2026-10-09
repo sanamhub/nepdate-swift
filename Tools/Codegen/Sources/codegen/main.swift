@@ -27,16 +27,42 @@ struct CalendarFile: Decodable {
   let minYear: Int
   let maxYear: Int
   let monthLengths: [String: [Int]]
+  let epoch: Epoch
+
+  struct Epoch: Decodable {
+    let bs: String
+    let ad: String
+  }
 
   enum CodingKeys: String, CodingKey {
     case minYear = "min_year"
     case maxYear = "max_year"
     case monthLengths = "month_lengths"
+    case epoch
   }
 }
 
-/// Month lengths per year, in year order, after the checks of S0-02.
-func loadMonthLengths() -> [(year: Int, lengths: [Int])] {
+struct CalendarInput {
+  let years: [(year: Int, lengths: [Int])]
+  /// AD date of BS 1901-01-01, `YYYY-MM-DD`.
+  let epochAD: String
+  /// Unix day of `epochAD`.
+  let epochUnixDays: Int
+}
+
+/// ALGORITHM §5, Hinnant's days_from_civil. Dev-time only, so plain `Int`.
+func daysFromCivil(_ year: Int, _ month: Int, _ day: Int) -> Int {
+  let y = month <= 2 ? year - 1 : year
+  let era = (y >= 0 ? y : y - 399) / 400
+  let yoe = y - era * 400
+  let mp = (month + 9) % 12
+  let doy = (153 * mp + 2) / 5 + day - 1
+  let doe = yoe * 365 + yoe / 4 - yoe / 100 + doy
+  return era * 146097 + doe - 719468
+}
+
+/// Month lengths per year, in year order, after the checks of S0-02, and the epoch.
+func loadCalendar() -> CalendarInput {
   let data: Data
   do {
     data = try Data(contentsOf: URL(fileURLWithPath: Paths.calendarJSON))
@@ -70,18 +96,83 @@ func loadMonthLengths() -> [(year: Int, lengths: [Int])] {
       fail("year \(entry.year) has a month of \(length) days, expected 29 to 32")
     }
   }
-  return years
+  guard file.epoch.bs == "1901-01-01" else {
+    fail("epoch.bs is \(file.epoch.bs), expected 1901-01-01")
+  }
+  let parts = file.epoch.ad.split(separator: "-").compactMap { Int($0) }
+  guard parts.count == 3 else { fail("epoch.ad \(file.epoch.ad) is not YYYY-MM-DD") }
+  return CalendarInput(
+    years: years, epochAD: file.epoch.ad, epochUnixDays: daysFromCivil(parts[0], parts[1], parts[2]))
 }
 
-func calendarSource(_ years: [(year: Int, lengths: [Int])], header: String) -> String {
+/// Index of the month that contains each serial, for the bucket table check.
+func monthIndexOfSerial(_ monthStart: [Int]) -> [Int] {
+  var result: [Int] = []
+  result.reserveCapacity(monthStart[monthStart.count - 1])
+  for i in 0..<(monthStart.count - 1) {
+    for _ in monthStart[i]..<monthStart[i + 1] { result.append(i) }
+  }
+  return result
+}
+
+func calendarSource(_ calendar: CalendarInput, header: String) -> String {
+  let years = calendar.years
+  var monthStart = [0]
+  for entry in years {
+    for length in entry.lengths { monthStart.append(monthStart[monthStart.count - 1] + length) }
+  }
+  let totalDays = monthStart[monthStart.count - 1]
+
+  // ADR-0002 §2: entry b is the month of serial b * 16. init(serial:) steps forward at most once,
+  // so every serial of a bucket must lie in that month or the next.
+  let monthOfSerial = monthIndexOfSerial(monthStart)
+  let bucketCount = (totalDays + 15) / 16
+  var monthAtBucket: [Int] = []
+  for b in 0..<bucketCount {
+    let first = monthOfSerial[b * 16]
+    for s in (b * 16)..<min(b * 16 + 16, totalDays) where monthOfSerial[s] > first + 1 {
+      fail("serial \(s) is two months after the start of its 16-day bucket")
+    }
+    monthAtBucket.append(first)
+  }
+  guard monthAtBucket.allSatisfy({ $0 <= Int(UInt16.max) }) else {
+    fail("a month index does not fit in UInt16")
+  }
+
   var out = header
   out += """
+    /// Calendar tables from `shared/data/calendar/bs-calendar.json` (ADR-0002 §2).
+    @usableFromInline
     enum CalendarData {
-      static let minYear = \(years[0].year)
-      static let maxYear = \(years[years.count - 1].year)
-    }
+      @usableFromInline static let minYear = \(years[0].year)
+      @usableFromInline static let maxYear = \(years[years.count - 1].year)
+      /// Unix day of BS 1901-01-01 (AD \(calendar.epochAD)), ALGORITHM §2.
+      @usableFromInline static let epochUnixDays: Int32 = \(calendar.epochUnixDays)
+      /// Last valid serial, BS \(years[years.count - 1].year)-12-\(years[years.count - 1].lengths[11]).
+      @usableFromInline static let maxSerial: Int32 = \(totalDays - 1)
+
+      /// Serial of the first day of month index `(year - 1901) * 12 + month - 1`.
+      /// \(monthStart.count) entries; the last one is the number of days in the range.
+      @usableFromInline static let monthStart: [Int32] = [
 
     """
+  for (offset, entry) in years.enumerated() {
+    let row = monthStart[(offset * 12)..<(offset * 12 + 12)].map(String.init)
+    out += "    \(row.joined(separator: ", ")), // \(entry.year)\n"
+  }
+  out += "    \(totalDays),\n  ]\n\n"
+  out += """
+      /// Month index of serial `b * 16`, for `b` in 0..<\(bucketCount).
+      @usableFromInline static let monthAtBucket: [UInt16] = [
+
+    """
+  var index = 0
+  while index < monthAtBucket.count {
+    let row = monthAtBucket[index..<min(index + 16, monthAtBucket.count)].map(String.init)
+    out += "    " + row.joined(separator: ", ") + ",\n"
+    index += 16
+  }
+  out += "  ]\n}\n"
   return out
 }
 
@@ -117,7 +208,7 @@ guard FileManager.default.fileExists(atPath: "shared/VERSION") else {
   exit(1)
 }
 
-let outputs = [(Paths.calendarOutput, calendarSource(loadMonthLengths(), header: header))]
+let outputs = [(Paths.calendarOutput, calendarSource(loadCalendar(), header: header))]
 
 if check {
   // Check every file before exiting, so one run reports all drift.
