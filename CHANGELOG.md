@@ -9,3 +9,4 @@ prefix (ADR-0005).
 ### Added
 
 - SwiftPM package `NepDate` with product `NepDate` (S0-01).
+- `Tools/Codegen` package: `codegen` writes `Calendar.generated.swift` from `shared/data`, `--check` fails on drift (S0-02).
