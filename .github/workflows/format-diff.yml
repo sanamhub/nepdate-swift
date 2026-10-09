@@ -1,0 +1,22 @@
+name: format-diff
+
+# Prints the changes `swift format` would make, for contributors without a local Swift toolchain.
+on: workflow_dispatch
+
+permissions:
+  contents: read
+
+jobs:
+  diff:
+    runs-on: ubuntu-24.04
+    container: swift:6.4
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - shell: bash
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          swift format --in-place --recursive Sources Tests Tools/Codegen/Sources Benchmarks
+          git diff

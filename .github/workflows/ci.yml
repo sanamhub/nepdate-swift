@@ -91,3 +91,33 @@ jobs:
           if ($out[-1] -ne 'ci: failed at gate 1: format') { throw "last line was: $($out[-1])" }
           Remove-Item Sources/NepDate/Unformatted.swift
           exit 0
+
+  bench:
+    runs-on: ubuntu-24.04
+    container: swift:6.4
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # Times are printed for the record; only the malloc thresholds are gated (ADR-0004).
+      - name: Benchmarks (CI runner, not the reference machine)
+        run: swift package --package-path Benchmarks benchmark --no-progress
+      - name: Malloc thresholds
+        run: >
+          swift package --package-path Benchmarks benchmark thresholds check
+          --no-progress --path "$GITHUB_WORKSPACE/Benchmarks/Thresholds"
+      - name: First access (S1-07)
+        run: swift run -c release --package-path Benchmarks first-access
+      - name: swift_once in the table accessors (S1-07)
+        shell: bash
+        run: |
+          set -euo pipefail
+          swift build -c release --target NepDate
+          for obj in $(find .build -path '*release/NepDate.build/*' -name '*.o'); do
+            objdump -d --no-show-raw-insn "$obj" | awk -v obj="$obj" '
+              /^[0-9a-f]+ <.*CalendarData.*(monthStart|monthAtBucket).*vau>:$/ { name = $2; calls[name] = 0; next }
+              /^[0-9a-f]+ </ { name = "" }
+              name != "" && /swift_once/ { calls[name]++ }
+              END { for (n in calls) printf "%s: %d swift_once call(s) in %s\n", n, calls[n], obj }'
+          done
