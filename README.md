@@ -24,7 +24,7 @@ Foundation's `Calendar.Identifier.vikram` (iOS 26+) is the Indian lunisolar Vikr
 Nepal's solar Bikram Sambat; its months don't match. Apple has no Nepali calendar
 ([docs/competitors.md](docs/competitors.md)). Use this package for Nepali dates.
 
-**Status:** planning complete, implementation not started (next: phase S0).
+**Status:** phase S0 done (package skeleton, generator, CI on macOS, Linux and Windows); next: phase S1.
 
 ## Where to start
 
