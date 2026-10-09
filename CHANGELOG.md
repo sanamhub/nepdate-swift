@@ -18,3 +18,8 @@ prefix (ADR-0005).
   `NepDateError` (S1-02 to S1-04).
 - Generated `monthStart` and `monthAtBucket` tables (S1-01).
 - `Benchmarks` package with B1 and B2 and a zero-malloc threshold, run by the `bench` CI job (S1-07).
+- `adding(days:)`, `days(until:)`, `adding(months:overflow:)`, `adding(years:overflow:)` with
+  `MonthOverflow`, and `diff(to:)` with `DateDiff` (S2-01 to S2-03).
+- `FiscalYear`, `Quarter`, `NepaliDate.fiscalYear` and `NepaliDate.quarter` (S2-04).
+- `NepaliDateRange`, a random-access collection of days with O(1) `count` and `contains` (S2-05).
+- Benchmarks B3, B4 and one month's range iteration (S2-06).
