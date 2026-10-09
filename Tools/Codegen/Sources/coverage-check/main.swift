@@ -41,8 +41,24 @@ do {
 let files = export.data.flatMap(\.files).filter { file in
   libraryDirectories.contains { file.filename.contains($0) }
 }
-// No matching file means the path filter is wrong, not that coverage is perfect.
-guard !files.isEmpty else { fail("no files under \(libraryDirectories) in the report") }
+/// Hand-written Swift files in the library directories, relative to the repository root. llvm-cov
+/// leaves a file with no executable code out of the report, and generated files hold only tables.
+func handWrittenSources() -> [String] {
+  libraryDirectories.flatMap { directory -> [String] in
+    let path = String(directory.dropFirst())
+    let names = (try? FileManager.default.contentsOfDirectory(atPath: path)) ?? []
+    return names.filter { $0.hasSuffix(".swift") && !$0.hasSuffix(".generated.swift") }
+      .map { path + $0 }
+  }
+}
+
+if files.isEmpty {
+  // With hand-written sources present, no match means the path filter is wrong.
+  let sources = handWrittenSources()
+  guard sources.isEmpty else { fail("none of \(sources) is in the report") }
+  print("coverage-check: no executable library code yet (only generated tables)")
+  exit(0)
+}
 
 let total = files.reduce(0) { $0 + $1.summary.lines.count }
 let covered = files.reduce(0) { $0 + $1.summary.lines.covered }
