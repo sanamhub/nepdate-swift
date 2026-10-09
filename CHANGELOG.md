@@ -12,3 +12,9 @@ prefix (ADR-0005).
 - `Tools/Codegen` package: `codegen` writes `Calendar.generated.swift` from `shared/data`, `--check` fails on drift (S0-02).
 - `scripts/ci.sh` and `scripts/ci.ps1` run the seven gates of ADR-0004; `coverage-check` enforces 90 % line coverage on Linux (S0-03).
 - CI on macOS, Linux and Windows; Dependabot for actions; community files (S0-04).
+- `NepaliDate` (8 bytes) with `init(year:month:day:)`, `init(gregorianYear:month:day:)`, `min`,
+  `max`, `year`, `month`, `day`, `bsMonth`, `weekday`, `dayOfYear`, `monthLength`,
+  `firstDayOfMonth`, `lastDayOfMonth` and `gregorian`; `Month`, `Weekday`, `Lang` and
+  `NepDateError` (S1-02 to S1-04).
+- Generated `monthStart` and `monthAtBucket` tables (S1-01).
+- `Benchmarks` package with B1 and B2 and a zero-malloc threshold, run by the `bench` CI job (S1-07).
