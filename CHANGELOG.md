@@ -11,3 +11,4 @@ prefix (ADR-0005).
 - SwiftPM package `NepDate` with product `NepDate` (S0-01).
 - `Tools/Codegen` package: `codegen` writes `Calendar.generated.swift` from `shared/data`, `--check` fails on drift (S0-02).
 - `scripts/ci.sh` and `scripts/ci.ps1` run the seven gates of ADR-0004; `coverage-check` enforces 90 % line coverage on Linux (S0-03).
+- CI on macOS, Linux and Windows; Dependabot for actions; community files (S0-04).

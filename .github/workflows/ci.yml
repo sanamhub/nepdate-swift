@@ -1,0 +1,93 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+# The shared-check job (the hub's reusable shared-check.yml) is added when hub H3 is merged and
+# sanamhub/nepdate exists on GitHub; see docs/plan/PROGRESS.md, S0-04.
+
+jobs:
+  macos:
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90 # v1.7.0
+        with:
+          xcode-version: latest-stable
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - run: swift --version
+      - run: ./scripts/ci.sh
+
+  linux:
+    runs-on: ubuntu-24.04
+    container: swift:6.4
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - run: swift --version
+      - run: ./scripts/ci.sh
+      - name: codegen is deterministic and --check fails on drift (S0-02 AC1, AC2)
+        shell: bash
+        run: |
+          set -euo pipefail
+          file=Sources/NepDate/Calendar.generated.swift
+          swift run --package-path Tools/Codegen codegen
+          first=$(sha256sum "$file")
+          swift run --package-path Tools/Codegen codegen
+          [ "$(sha256sum "$file")" = "$first" ] || { echo "two runs differ"; exit 1; }
+          printf ' ' >> "$file"
+          if swift run --package-path Tools/Codegen codegen --check; then
+            echo "--check passed after a one-byte change"; exit 1
+          fi
+          swift run --package-path Tools/Codegen codegen
+      - name: ci.sh fails on an unformatted file (S0-03 AC1, AC2)
+        shell: bash
+        run: |
+          set -uo pipefail
+          printf 'enum Unformatted {\n\n\n  static let x = 1\n}\n' > Sources/NepDate/Unformatted.swift
+          if ./scripts/ci.sh > ci.log 2>&1; then
+            cat ci.log; echo "ci.sh passed an unformatted file"; exit 1
+          fi
+          cat ci.log
+          [ "$(tail -n 1 ci.log)" = "ci: failed at gate 1: format" ]
+          rm Sources/NepDate/Unformatted.swift ci.log
+
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: compnerd/gha-setup-swift@bbae8ce86bac5a3449f3992b3d88bc4ca25f2057 # v0.5.0
+        with:
+          swift-version: swift-6.4-release
+          swift-build: 6.4-RELEASE
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - run: swift --version
+      - run: ./scripts/ci.ps1
+        shell: pwsh
+      - name: ci.ps1 fails on an unformatted file (S0-03 AC1, AC2)
+        shell: pwsh
+        run: |
+          Set-Content -NoNewline -Path Sources/NepDate/Unformatted.swift `
+            -Value "enum Unformatted {`n`n`n  static let x = 1`n}`n"
+          $out = pwsh -NoProfile -File scripts/ci.ps1
+          $code = $LASTEXITCODE
+          $out | Write-Host
+          if ($code -eq 0) { throw 'ci.ps1 passed an unformatted file' }
+          if ($out[-1] -ne 'ci: failed at gate 1: format') { throw "last line was: $($out[-1])" }
+          Remove-Item Sources/NepDate/Unformatted.swift
+          exit 0
