@@ -114,7 +114,8 @@ jobs:
         run: |
           set -euo pipefail
           swift build -c release --target NepDate
-          objects=$(find .build -path '*release/NepDate.build/*' -name '*.o')
+          # The build system's object layout differs between SwiftPM versions, so search by name.
+          objects=$(find .build -name '*.o' | grep -iv debug | grep -E '(Calendar\.generated|NepaliDate)[^/]*\.o$')
           echo "objects: $objects"
           for obj in $objects; do
             echo "== $obj: CalendarData symbols"
