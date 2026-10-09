@@ -102,7 +102,8 @@ func loadCalendar() -> CalendarInput {
   let parts = file.epoch.ad.split(separator: "-").compactMap { Int($0) }
   guard parts.count == 3 else { fail("epoch.ad \(file.epoch.ad) is not YYYY-MM-DD") }
   return CalendarInput(
-    years: years, epochAD: file.epoch.ad, epochUnixDays: daysFromCivil(parts[0], parts[1], parts[2]))
+    years: years, epochAD: file.epoch.ad, epochUnixDays: daysFromCivil(parts[0], parts[1], parts[2])
+  )
 }
 
 /// Index of the month that contains each serial, for the bucket table check.

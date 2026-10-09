@@ -14,15 +14,20 @@ func ad(_ year: Int, _ month: Int, _ day: Int) throws -> NepaliDate {
 }
 
 /// Expects `body` to throw a `NepDateError` of the given kind.
+///
+/// `body` is untyped `throws`: a closure literal's thrown type is not inferred from a typed-throws
+/// parameter, so the error is cast back here.
 func expectError(
   _ kind: NepDateError.Kind, sourceLocation: SourceLocation = #_sourceLocation,
-  _ body: () throws(NepDateError) -> Void
+  _ body: () throws -> Void
 ) {
   do {
     try body()
     Issue.record("expected \(kind), nothing was thrown", sourceLocation: sourceLocation)
-  } catch {
+  } catch let error as NepDateError {
     #expect(error.kind == kind, sourceLocation: sourceLocation)
+  } catch {
+    Issue.record("expected NepDateError, got \(error)", sourceLocation: sourceLocation)
   }
 }
 

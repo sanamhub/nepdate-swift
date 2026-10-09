@@ -9,7 +9,7 @@ let package = Package(
   platforms: [.macOS(.v13)],
   dependencies: [
     .package(path: ".."),
-    .package(url: "https://github.com/ordo-one/package-benchmark", exact: "1.36.4"),
+    .package(url: "https://github.com/ordo-one/benchmark", exact: "1.36.4"),
   ],
   targets: [
     .target(
@@ -20,10 +20,10 @@ let package = Package(
       dependencies: [
         "BenchmarkInputs",
         .product(name: "NepDate", package: "nepdate-swift"),
-        .product(name: "Benchmark", package: "package-benchmark"),
+        .product(name: "Benchmark", package: "benchmark"),
       ],
       path: "Benchmarks/NepDateBenchmarks",
-      plugins: [.plugin(name: "BenchmarkPlugin", package: "package-benchmark")]),
+      plugins: [.plugin(name: "BenchmarkPlugin", package: "benchmark")]),
     .executableTarget(
       name: "first-access",
       dependencies: [.product(name: "NepDate", package: "nepdate-swift")]),

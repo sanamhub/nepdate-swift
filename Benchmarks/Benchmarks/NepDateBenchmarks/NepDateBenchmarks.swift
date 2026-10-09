@@ -19,6 +19,13 @@ let benchmarks: @Sendable () -> Void = {
   let bs = inputs.bs
   let ad = inputs.ad
 
+  // The same loop with no NepDate call: what the harness itself allocates per iteration.
+  Benchmark("Baseline", configuration: configuration) { benchmark in
+    for _ in benchmark.scaledIterations {
+      for date in bs { blackHole(date.day) }
+    }
+  }
+
   Benchmark("B1", configuration: configuration) { benchmark in
     for _ in benchmark.scaledIterations {
       for date in bs {
