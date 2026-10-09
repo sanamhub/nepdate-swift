@@ -227,4 +227,29 @@ struct OptimizationVerificationTests {
 
   // OptimizationVerificationTests.IsDefault_DefaultStruct_ReturnsTrue: D-01, no default date.
   // OptimizationVerificationTests.IsDefault_ValidDate_ReturnsFalse: D-01, no default date.
+
+  // C# `date - date` gives a TimeSpan; Swift gives the signed day count (D-07).
+  @Test("OptimizationVerificationTests.Subtraction_SameDate_ReturnsZeroDays")
+  func subtractionSameDateReturnsZeroDays() throws {
+    let date = try bs(2080, 5, 15)
+    #expect(date.days(until: date) == 0)
+  }
+
+  @Test("OptimizationVerificationTests.Subtraction_AdjacentDays_ReturnsOneDay")
+  func subtractionAdjacentDaysReturnsOneDay() throws {
+    let a = try bs(2080, 5, 15)
+    let b = try bs(2080, 5, 16)
+    #expect(a.days(until: b) == 1)
+    #expect(b.days(until: a) == -1)
+  }
+
+  @Test("OptimizationVerificationTests.Subtraction_CrossMonth_CorrectDays")
+  func subtractionCrossMonthCorrectDays() throws {
+    #expect(try bs(2080, 4, 32).days(until: bs(2080, 5, 1)) == 1)
+  }
+
+  @Test("OptimizationVerificationTests.Subtraction_CrossYear_CorrectDays")
+  func subtractionCrossYearCorrectDays() throws {
+    #expect(try bs(2080, 12, 1).lastDayOfMonth.days(until: bs(2081, 1, 1)) == 1)
+  }
 }

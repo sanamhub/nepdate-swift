@@ -85,4 +85,62 @@ struct PropertyTests {
     }
     #expect(failures == 0)
   }
+
+  @Test("P4: adding n days then -n days gives the date back")
+  func addDaysRoundTrip() {
+    var rng = SplitMix64(seed: Self.seed ^ 4)
+    var failures = 0
+    for _ in 0..<Self.cases {
+      let date = NepaliDate(serial: Int32.random(in: 0...CalendarData.maxSerial, using: &rng))
+      let n = Int.random(in: -120_000...120_000, using: &rng)
+      guard let moved = try? date.adding(days: n) else { continue }
+      if (try? moved.adding(days: -n)) != date { failures += 1 }
+    }
+    #expect(failures == 0)
+  }
+
+  @Test("P5: days(until:) of d.adding(days: n) is n")
+  func daysUntilMatchesAdding() {
+    var rng = SplitMix64(seed: Self.seed ^ 5)
+    var failures = 0
+    for _ in 0..<Self.cases {
+      let date = NepaliDate(serial: Int32.random(in: 0...CalendarData.maxSerial, using: &rng))
+      let n = Int.random(in: -120_000...120_000, using: &rng)
+      guard let moved = try? date.adding(days: n) else { continue }
+      if date.days(until: moved) != n { failures += 1 }
+    }
+    #expect(failures == 0)
+  }
+
+  @Test("P6: adding months with clamp keeps the day or clamps it to the month length")
+  func clampKeepsDay() {
+    var rng = SplitMix64(seed: Self.seed ^ 6)
+    var failures = 0
+    for _ in 0..<Self.cases {
+      let date = NepaliDate(serial: Int32.random(in: 0...CalendarData.maxSerial, using: &rng))
+      let n = Int.random(in: -3600...3600, using: &rng)
+      guard let moved = try? date.adding(months: n, overflow: .clamp) else { continue }
+      let expectedDay = Swift.min(date.day, moved.monthLength)
+      let monthsMoved = (moved.year - date.year) * 12 + moved.month - date.month
+      if moved.day != expectedDay || monthsMoved != n { failures += 1 }
+    }
+    #expect(failures == 0)
+  }
+
+  @Test("P7: the diff breakdown re-added to the earlier date gives the later date")
+  func diffReAdds() {
+    var rng = SplitMix64(seed: Self.seed ^ 7)
+    var failures = 0
+    for _ in 0..<Self.cases {
+      let a = NepaliDate(serial: Int32.random(in: 0...CalendarData.maxSerial, using: &rng))
+      let b = NepaliDate(serial: Int32.random(in: 0...CalendarData.maxSerial, using: &rng))
+      let diff = a.diff(to: b)
+      let (earlier, later) = diff.isNegative ? (b, a) : (a, b)
+      let months = diff.years * 12 + diff.months
+      let rebuilt = try? earlier.adding(months: months).adding(days: diff.days)
+      let wellFormed = diff.days >= 0 && (0...11).contains(diff.months)
+      if rebuilt != later || diff.totalDays != a.days(until: b) || !wellFormed { failures += 1 }
+    }
+    #expect(failures == 0)
+  }
 }
