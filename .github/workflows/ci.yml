@@ -114,10 +114,13 @@ jobs:
         run: |
           set -euo pipefail
           swift build -c release --target NepDate
-          for obj in $(find .build -path '*release/NepDate.build/*' -name '*.o'); do
-            objdump -d --no-show-raw-insn "$obj" | awk -v obj="$obj" '
-              /^[0-9a-f]+ <.*CalendarData.*(monthStart|monthAtBucket).*vau>:$/ { name = $2; calls[name] = 0; next }
-              /^[0-9a-f]+ </ { name = "" }
-              name != "" && /swift_once/ { calls[name]++ }
-              END { for (n in calls) printf "%s: %d swift_once call(s) in %s\n", n, calls[n], obj }'
+          objects=$(find .build -path '*release/NepDate.build/*' -name '*.o')
+          echo "objects: $objects"
+          for obj in $objects; do
+            echo "== $obj: CalendarData symbols"
+            nm "$obj" | grep CalendarData || true
+            echo "== $obj: calls to swift_once or swift_initStaticObject, by function"
+            objdump -dr --no-show-raw-insn "$obj" | awk '
+              /^[0-9a-f]+ <.*>:$/ { name = $2; next }
+              /swift_once|swift_initStaticObject/ { print name, $NF }' | sort | uniq -c
           done
