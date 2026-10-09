@@ -4,8 +4,9 @@ import NepDate
 
 // B1 and B2 of shared/spec/BENCHMARK.md §3. One iteration runs all 64 inputs, so divide the
 // reported time by 64 for one operation (package-benchmark's scaling factor is a power of 1,000).
-// The malloc count must stay 0 (ADR-0002 §7); Thresholds/ holds the static values that
-// `benchmark thresholds check` compares against.
+// NepDate must add no malloc (ADR-0002 §7). The harness itself counts 16 per iteration on Linux
+// (the Baseline benchmark, same loop without NepDate), so Thresholds/ holds 16 for all three and
+// `benchmark thresholds check` fails on any malloc above that.
 let benchmarks: @Sendable () -> Void = {
   let configuration = Benchmark.Configuration(
     metrics: [.wallClock, .mallocCountTotal, .instructions],
