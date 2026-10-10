@@ -9,6 +9,12 @@ import Foundation
 enum Paths {
   static let calendarJSON = "shared/data/calendar/bs-calendar.json"
   static let calendarOutput = "Sources/NepDate/Calendar.generated.swift"
+  static let parsingSpec = "shared/spec/PARSING.md"
+  static let wordsOutput = "Sources/NepDate/LenientWords.generated.swift"
+  /// Era markers and filler words that lenient parsing drops (PARSING §2).
+  static let droppedWords = [
+    "bs", "b.s.", "b.s", "vs", "v.s.", "v.s", "बि.सं.", "वि.सं.", "बि.सं", "वि.सं", "गते", "मिति",
+  ]
 }
 
 let header = """
@@ -177,6 +183,82 @@ func calendarSource(_ calendar: CalendarInput, header: String) -> String {
   return out
 }
 
+/// The month names of PARSING §3, in table order, without repeats, after the checks of S3-05.
+func loadMonthWords() -> [(word: String, month: Int)] {
+  guard let text = try? String(contentsOfFile: Paths.parsingSpec, encoding: .utf8) else {
+    fail("cannot read \(Paths.parsingSpec)")
+  }
+  var inSection = false
+  var words: [(word: String, month: Int)] = []
+  for line in text.split(separator: "\n", omittingEmptySubsequences: false) {
+    if line.hasPrefix("## ") { inSection = line.hasPrefix("## 3.") }
+    guard inSection, line.hasPrefix("| ") else { continue }
+    let cells = line.split(separator: "|").map { $0.trimmingCharacters(in: .whitespaces) }
+    guard cells.count == 2, let month = Int(cells[0]) else { continue }
+    for word in cells[1].split(separator: ",") {
+      let name = word.trimmingCharacters(in: .whitespaces)
+      if !words.contains(where: { $0.word == name }) { words.append((name, month)) }
+    }
+  }
+  guard Set(words.map(\.month)) == Set(1...12) else {
+    fail("\(Paths.parsingSpec) §3 does not list names for all 12 months")
+  }
+  return words
+}
+
+/// Byte comparison equals canonical equivalence only when no word changes under NFC or NFD, and
+/// lowercasing ASCII bytes equals case-insensitive matching only for lowercase words.
+func checkWord(_ word: String) {
+  guard word.precomposedStringWithCanonicalMapping == word,
+    word.decomposedStringWithCanonicalMapping == word
+  else { fail("\"\(word)\" changes under NFC or NFD") }
+  guard !word.utf8.contains(where: { (0x41...0x5A).contains($0) }) else {
+    fail("\"\(word)\" has an upper-case letter")
+  }
+}
+
+func wordsSource(_ months: [(word: String, month: Int)], header: String) -> String {
+  let words = months + Paths.droppedWords.map { (word: $0, month: 0) }
+  var bytes: [UInt8] = []
+  var entries: [(offset: Int, length: Int, month: Int, word: String)] = []
+  for (word, month) in words {
+    checkWord(word)
+    entries.append((bytes.count, word.utf8.count, month, word))
+    bytes.append(contentsOf: word.utf8)
+  }
+  guard bytes.count <= Int(UInt16.max) else { fail("lenient words exceed UInt16 offsets") }
+
+  var out = header
+  out += """
+    /// Words lenient parsing recognises (PARSING §2 and §3), as UTF-8 bytes with Latin letters in
+    /// lower case. Byte equality is canonical equivalence here: the generator rejects any word
+    /// that NFC or NFD would change.
+    @usableFromInline
+    enum LenientWords {
+      /// Every word's bytes, back to back.
+      @usableFromInline static let bytes: [UInt8] = [
+
+    """
+  var index = 0
+  while index < bytes.count {
+    let row = bytes[index..<min(index + 16, bytes.count)].map(String.init)
+    out += "    " + row.joined(separator: ", ") + ",\n"
+    index += 16
+  }
+  out += "  ]\n\n"
+  out += """
+      /// Three entries per word: offset into `bytes`, byte length, and month 1 to 12, or 0 for a
+      /// word that is dropped.
+      @usableFromInline static let entries: [UInt16] = [
+
+    """
+  for entry in entries {
+    out += "    \(entry.offset), \(entry.length), \(entry.month), // \(entry.word)\n"
+  }
+  out += "  ]\n}\n"
+  return out
+}
+
 /// Prints the first line where `expected` and the file on disk differ. Returns true when equal.
 func matchesDisk(_ expected: String, path: String) -> Bool {
   guard let disk = FileManager.default.contents(atPath: path) else {
@@ -209,7 +291,10 @@ guard FileManager.default.fileExists(atPath: "shared/VERSION") else {
   exit(1)
 }
 
-let outputs = [(Paths.calendarOutput, calendarSource(loadCalendar(), header: header))]
+let outputs = [
+  (Paths.calendarOutput, calendarSource(loadCalendar(), header: header)),
+  (Paths.wordsOutput, wordsSource(loadMonthWords(), header: header)),
+]
 
 if check {
   // Check every file before exiting, so one run reports all drift.
