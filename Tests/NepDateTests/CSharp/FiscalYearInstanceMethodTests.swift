@@ -34,7 +34,8 @@ struct FiscalYearInstanceMethodTests {
     #expect(try bs(2080, 1, 15).fiscalYear.start() == bs(2079, 4, 1))
   }
 
-  @Test("FiscalYearInstanceMethodTests.FiscalYearStartDate_DateInAshadh_ReturnsPreviousYearShrawan1")
+  @Test(
+    "FiscalYearInstanceMethodTests.FiscalYearStartDate_DateInAshadh_ReturnsPreviousYearShrawan1")
   func startDateInAshad() throws {
     #expect(try bs(2080, 3, 10).fiscalYear.start() == bs(2079, 4, 1))
   }
@@ -192,7 +193,8 @@ struct FiscalYearInstanceMethodTests {
   }
 
   @Test(
-    "FiscalYearInstanceMethodTests.FiscalYearQuarterEndDate_Current_DateInQ3_ReturnsLastDayOfChaitra")
+    "FiscalYearInstanceMethodTests.FiscalYearQuarterEndDate_Current_DateInQ3_ReturnsLastDayOfChaitra"
+  )
   func currentQuarterEndInQ3() throws {
     let date = try bs(2080, 11, 15)
     let end = try quarter(date, date.quarter).upperBound
