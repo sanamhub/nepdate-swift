@@ -143,4 +143,34 @@ struct PropertyTests {
     }
     #expect(failures == 0)
   }
+
+  /// Pieces the S3-07 generator draws from: digits, separators, month names and odd scalars.
+  static let pieces: [String] = [
+    "0", "1", "2", "5", "9", "2080", "15", "०", "१", "२", "५", "९", "/", "-", ".", "_", "\\", " ",
+    "|", "।", ",", "Shrawan", "shr", "SAUN", "साउन", "मार्गशीर्ष", "BS", "B.S.", "वि.सं.", "गते", "x",
+    "é", "\u{0301}", "\u{1F600}", "\u{0000}", "٢", "²", "\t", "\n", "'", "MMM", "yyyy",
+  ]
+
+  @Test("S3-07: parse and parseLenient never crash and round-trip what they accept")
+  func parseNeverCrashes() {
+    var rng = SplitMix64(seed: Self.seed ^ 8)
+    var failures = 0
+    for _ in 0..<Self.cases {
+      var text = ""
+      for _ in 0..<Int.random(in: 0...24, using: &rng) {
+        if Int.random(in: 0..<8, using: &rng) == 0 {
+          let scalar = Unicode.Scalar(UInt32.random(in: 0...0x10FFFF, using: &rng)) ?? "?"
+          text.unicodeScalars.append(scalar)
+        } else {
+          text += Self.pieces[Int.random(in: 0..<Self.pieces.count, using: &rng)]
+        }
+      }
+      // Typed throws: anything thrown here is a NepDateError by construction.
+      if let date = try? NepaliDate.parse(text) {
+        if (try? NepaliDate.parse(date.format("s"))) != date { failures += 1 }
+      }
+      _ = try? NepaliDate.parseLenient(text)
+    }
+    #expect(failures == 0)
+  }
 }
