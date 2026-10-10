@@ -41,7 +41,7 @@ struct ArithmeticTests {
   }
 
   @Test("S2-01 AC2: adding(days:) at the ends and with extreme counts")
-  func addDaysExtremes() {
+  func addDaysExtremes() throws {
     expectError(.outOfRange) { _ = try NepaliDate.max.adding(days: 1) }
     expectError(.outOfRange) { _ = try NepaliDate.min.adding(days: -1) }
     expectError(.outOfRange) { _ = try NepaliDate.min.adding(days: Int.min) }
@@ -209,6 +209,7 @@ struct ArithmeticTests {
     #expect(Array(shrawan) == looped)
     #expect(looped == looped.sorted() && looped.count == 32)
     #expect(looped.enumerated().allSatisfy { $0.element.day == $0.offset + 1 })
-    #expect(shrawan.contains(a) && !shrawan.contains(try bs(2081, 5, 1)))
+    let bhadra1 = try bs(2081, 5, 1)
+    #expect(shrawan.contains(a) && !shrawan.contains(bhadra1))
   }
 }
