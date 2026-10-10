@@ -2,9 +2,13 @@ import Testing
 
 @testable import NepDate
 
-// Rows that build a date from a string are written now, as the hub PORT-PLAN asks. Each one is
-// marked PENDING with the task that brings the API: it builds the expected date with the
-// constructor until then, or is disabled when it needs the parser itself.
+/// `parseLenient` as `parse.tsv` writes results, for rows whose outcome D-06 changes.
+func lenientResult(_ text: String) -> String {
+  parseResult { () throws(NepDateError) -> NepaliDate in try NepaliDate.parseLenient(text) }
+}
+
+// C# `new NepaliDate(string)` is the strict `parse(_:)`; its auto-adjust overloads become
+// `parseLenient(_:)` with the explicit rules of D-06 (no swapping, no two-digit years).
 @Suite("NepaliDateConstructionTests")
 struct NepaliDateConstructionTests {
   @Test("NepaliDateConstructionTests.Constructor_ValidNepaliDate_CreatesInstance")
@@ -34,53 +38,56 @@ struct NepaliDateConstructionTests {
     }
   }
 
-  // PENDING S3-04: replace the constructor with `NepaliDate.parse(input)`.
   @Test(
     "NepaliDateConstructionTests.Constructor_ValidStringFormats_CreatesInstance",
     arguments: [
       "2080/05/15", "2080-05-15", "2080.05.15", "2080_05_15", "2080\\05\\15", "2080 05 15",
     ])
   func constructorValidStringFormatsCreatesInstance(input: String) throws {
-    let date = try bs(2080, 5, 15)
-    #expect(date.year == 2080 && date.month == 5 && date.day == 15)
+    #expect(try NepaliDate.parse(input) == bs(2080, 5, 15))
   }
 
-  // PENDING S3-05: C# auto-adjust becomes `parseLenient` rules (D-06); replace the constructor
-  // with `NepaliDate.parseLenient(input)` and apply the D-06 outcome (2-digit years are
-  // `.ambiguous`).
+  // D-06: `05/15/2080` reads as day 5, month 15, and `80/05/15` has no 4-digit year.
   @Test(
     "NepaliDateConstructionTests.Constructor_AutoAdjustedFormats_CreatesInstance",
-    arguments: ["15/05/2080", "05/15/2080", "2080/05/15", "80/05/15"])
-  func constructorAutoAdjustedFormatsCreatesInstance(input: String) throws {
-    let date = try bs(2080, 5, 15)
-    #expect(date.year == 2080 && date.month == 5 && date.day == 15)
+    arguments: [
+      ("15/05/2080", "2080-05-15"), ("05/15/2080", "ERR:InvalidMonth"),
+      ("2080/05/15", "2080-05-15"), ("80/05/15", "ERR:Ambiguous"),
+    ])
+  func constructorAutoAdjustedFormatsCreatesInstance(input: String, expected: String) {
+    #expect(lenientResult(input) == expected)
   }
 
-  // PENDING S3-05 (D-06): replace the constructor with `NepaliDate.parseLenient(input)`.
+  // D-06: month and day are never swapped, so a month over 12 is invalid.
   @Test(
     "NepaliDateConstructionTests.Constructor_AutoAdjust_MonthOverflowWithBoundaryDay_SwapsAsDocumented",
-    arguments: [("2080/13/12", [2080, 12, 13]), ("2080/15/11", [2080, 11, 15])])
-  func constructorAutoAdjustMonthOverflow(input: String, expected: [Int]) throws {
-    let date = try bs(expected[0], expected[1], expected[2])
-    #expect(date.year == expected[0] && date.month == expected[1] && date.day == expected[2])
+    arguments: ["2080/13/12", "2080/15/11"])
+  func constructorAutoAdjustMonthOverflow(input: String) {
+    #expect(lenientResult(input) == "ERR:InvalidMonth")
   }
 
+  // D-06, as the row above.
   @Test(
-    "NepaliDateConstructionTests.TryParse_AutoAdjust_MonthOverflowWithBoundaryDay_SwapsAsDocumented",
-    .disabled("PENDING S3-05: needs parseLenient (D-06)"))
-  func tryParseAutoAdjustMonthOverflow() {}
+    "NepaliDateConstructionTests.TryParse_AutoAdjust_MonthOverflowWithBoundaryDay_SwapsAsDocumented")
+  func tryParseAutoAdjustMonthOverflow() {
+    #expect((try? NepaliDate.parseLenient("2080/13/12")) == nil)
+  }
 
   @Test(
     "NepaliDateConstructionTests.Constructor_InvalidStringFormats_ThrowsException",
-    .disabled("PENDING S3-04: needs parse"), arguments: ["", "invalid", "2080/5"])
-  func constructorInvalidStringFormatsThrowsException(input: String) {}
+    arguments: [
+      ("", NepDateError.Kind.wrongGroupCount), ("invalid", .invalidCharacter),
+      ("2080/5", .wrongGroupCount),
+    ])
+  func constructorInvalidStringFormatsThrowsException(input: String, kind: NepDateError.Kind) {
+    expectError(kind) { _ = try NepaliDate.parse(input) }
+  }
 
-  // PENDING S3-04: replace the constructor with `NepaliDate.parse(input)`.
   @Test(
     "NepaliDateConstructionTests.Constructor_ValidFormatInvalidDate_ThrowsException",
     arguments: ["2080/5/40"])
   func constructorValidFormatInvalidDateThrowsException(input: String) {
-    expectError(.invalidDay(monthLength: 31)) { _ = try NepaliDate(year: 2080, month: 5, day: 40) }
+    expectError(.invalidDay(monthLength: 31)) { _ = try NepaliDate.parse(input) }
   }
 
   @Test("NepaliDateConstructionTests.Constructor_EnglishDate_ConvertsCorrectly")
@@ -89,15 +96,15 @@ struct NepaliDateConstructionTests {
     #expect(date.year == 2080 && date.month == 5 && date.day == 13)
   }
 
-  // PENDING S3-04: replace the constructor with `NepaliDate("2080/05/15")`.
   @Test("NepaliDateConstructionTests.TryParse_ValidString_ReturnsTrueWithCorrectDate")
   func tryParseValidStringReturnsTrueWithCorrectDate() throws {
-    let date = try bs(2080, 5, 15)
-    #expect(date.year == 2080 && date.month == 5 && date.day == 15)
+    #expect(NepaliDate("2080/05/15") == (try bs(2080, 5, 15)))
   }
 
   @Test(
     "NepaliDateConstructionTests.TryParse_InvalidString_ReturnsFalseWithDefault",
-    .disabled("PENDING S3-04: needs init?(_:)"), arguments: ["", "invalid", "2080/5"])
-  func tryParseInvalidStringReturnsFalseWithDefault(input: String) {}
+    arguments: ["", "invalid", "2080/5"])
+  func tryParseInvalidStringReturnsFalseWithDefault(input: String) {
+    #expect(NepaliDate(input) == nil)
+  }
 }

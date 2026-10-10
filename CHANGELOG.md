@@ -23,3 +23,8 @@ prefix (ADR-0005).
 - `FiscalYear`, `Quarter`, `NepaliDate.fiscalYear` and `NepaliDate.quarter` (S2-04).
 - `NepaliDateRange`, a random-access collection of days with O(1) `count` and `contains` (S2-05).
 - Benchmarks B3, B4 and one month's range iteration (S2-06).
+- Month and weekday names, `nepaliDigits`, `description`, `short`, `long`, `format` and their
+  `append…(to:)` forms, `DateOrder` and `Separator` (S3-01 to S3-03).
+- Strict `parse`, `init?(_:)`, lenient `parseLenient` with the generated month list, and
+  `Codable` as `"YYYY-MM-DD"` (S3-04 to S3-06).
+- Benchmarks B5, B5a and B6; the `Fuzz` package and CI job (S3-08).

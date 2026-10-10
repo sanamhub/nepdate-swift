@@ -125,3 +125,35 @@ jobs:
               /^[0-9a-f]+ <.*>:$/ { name = $2; next }
               /swift_once|swift_initStaticObject/ { print name, $NF }' | sort | uniq -c
           done
+
+  fuzz:
+    runs-on: ubuntu-24.04
+    container: swift:6.4
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Build the fuzz targets
+        run: >
+          swift build -c debug --package-path Fuzz -Xswiftc -sanitize=fuzzer,address
+          -Xswiftc -parse-as-library
+      # Seed corpus: the input column of parse.tsv, one file per row.
+      - name: Fuzz parse, parseLenient and format for 60 seconds each
+        shell: bash
+        env:
+          ASAN_OPTIONS: detect_leaks=0
+        run: |
+          set -euo pipefail
+          mkdir -p corpus
+          n=0
+          tail -n +2 shared/spec/vectors/parse.tsv | cut -f1 | while IFS= read -r line; do
+            n=$((n + 1))
+            printf '%s' "$line" > "corpus/row$n"
+          done
+          bin=$(swift build -c debug --package-path Fuzz --show-bin-path)
+          for target in FuzzParse FuzzParseLenient FuzzFormat; do
+            mkdir -p "work/$target"
+            cp corpus/* "work/$target/"
+            "$bin/$target" -max_total_time=60 "work/$target"
+          done

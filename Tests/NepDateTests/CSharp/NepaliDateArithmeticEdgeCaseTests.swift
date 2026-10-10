@@ -106,32 +106,37 @@ struct NepaliDateArithmeticEdgeCaseTests {
     .disabled("PENDING S4-04: needs init(_:in:) with two Date values"))
   func constructorTwoDateTimesOnSameEnglishDate() {}
 
-  // The TryParse auto-adjust rows become `parseLenient` rules (D-06).
+  // The TryParse auto-adjust rows are `parseLenient` (D-06): no swapping, no two-digit years.
   @Test(
-    "NepaliDateArithmeticEdgeCaseTests.TryParse_AutoAdjust_DayYearMonthFormat_ReturnsCorrectDate",
-    .disabled("PENDING S3-05: needs parseLenient (D-06)"))
-  func tryParseAutoAdjustDayYearMonth() {}
+    "NepaliDateArithmeticEdgeCaseTests.TryParse_AutoAdjust_DayYearMonthFormat_ReturnsCorrectDate")
+  func tryParseAutoAdjustDayYearMonth() throws {
+    #expect(try NepaliDate.parseLenient("15/05/2080") == bs(2080, 5, 15))
+  }
+
+  // D-06: day, month, year, so 15 is the month.
+  @Test(
+    "NepaliDateArithmeticEdgeCaseTests.TryParse_AutoAdjust_MonthDayYearInvertedOrder_ReturnsCorrectDate"
+  )
+  func tryParseAutoAdjustMonthDayYear() {
+    #expect(lenientResult("05/15/2080") == "ERR:InvalidMonth")
+  }
+
+  // D-06: two-digit years are never expanded.
+  @Test(
+    "NepaliDateArithmeticEdgeCaseTests.TryParse_AutoAdjust_TwoDigitYear_ExpandsToCurrentMillennium")
+  func tryParseAutoAdjustTwoDigitYear() {
+    #expect(lenientResult("15/05/80") == "ERR:Ambiguous")
+  }
 
   @Test(
-    "NepaliDateArithmeticEdgeCaseTests.TryParse_AutoAdjust_MonthDayYearInvertedOrder_ReturnsCorrectDate",
-    .disabled("PENDING S3-05: needs parseLenient (D-06)"))
-  func tryParseAutoAdjustMonthDayYear() {}
+    "NepaliDateArithmeticEdgeCaseTests.TryParse_AutoAdjust_InvalidDateAfterAdjustment_ReturnsFalse")
+  func tryParseAutoAdjustInvalidDate() {
+    #expect((try? NepaliDate.parseLenient("99/99/99")) == nil)
+  }
 
-  @Test(
-    "NepaliDateArithmeticEdgeCaseTests.TryParse_AutoAdjust_TwoDigitYear_ExpandsToCurrentMillennium",
-    .disabled("PENDING S3-05: needs parseLenient; 2-digit years are .ambiguous (D-06)"))
-  func tryParseAutoAdjustTwoDigitYear() {}
-
-  @Test(
-    "NepaliDateArithmeticEdgeCaseTests.TryParse_AutoAdjust_InvalidDateAfterAdjustment_ReturnsFalse",
-    .disabled("PENDING S3-05: needs parseLenient (D-06)"))
-  func tryParseAutoAdjustInvalidDate() {}
-
-  // PENDING S3-05: replace the constructor with `NepaliDate.parseLenient("2080/05/15")`.
   @Test(
     "NepaliDateArithmeticEdgeCaseTests.TryParse_AutoAdjust_ValidStandardFormat_ReturnsCorrectDate")
   func tryParseAutoAdjustValidStandardFormat() throws {
-    let date = try bs(2080, 5, 15)
-    #expect(date.year == 2080 && date.month == 5 && date.day == 15)
+    #expect(try NepaliDate.parseLenient("2080/05/15") == bs(2080, 5, 15))
   }
 }

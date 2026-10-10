@@ -2,11 +2,9 @@ import Testing
 
 @testable import NepDate
 
-// The phase-1 rows of OptimizationVerificationTests. Rows that read strings are marked PENDING
-// with the task that brings the parser (hub PORT-PLAN).
+// C# `new NepaliDate(string)` is `parse(_:)`; `SmartDateParser` is `parseLenient(_:)` (D-06).
 @Suite("OptimizationVerificationTests")
 struct OptimizationVerificationTests {
-  // PENDING S3-04: replace the constructor with `NepaliDate.parse(input)`.
   @Test(
     "OptimizationVerificationTests.Constructor_AllSeparators_ParseCorrectly",
     arguments: [
@@ -14,28 +12,26 @@ struct OptimizationVerificationTests {
       "2080।05।15", "2080|05|15",
     ])
   func constructorAllSeparatorsParseCorrectly(input: String) throws {
-    let date = try bs(2080, 5, 15)
-    #expect(date.year == 2080 && date.month == 5 && date.day == 15)
+    #expect(try NepaliDate.parse(input) == bs(2080, 5, 15))
   }
 
   @Test(
     "OptimizationVerificationTests.Constructor_InvalidStrings_ThrowsException",
-    .disabled("PENDING S3-04: needs parse"),
     arguments: ["", "invalid", "2080/05", "2080", "2080/05/15/99", "abc/def/ghi"])
-  func constructorInvalidStringsThrowsException(input: String) {}
+  func constructorInvalidStringsThrowsException(input: String) {
+    #expect(throws: NepDateError.self) { try NepaliDate.parse(input) }
+  }
 
   // OptimizationVerificationTests.Constructor_NullString_ThrowsException: n/a, a Swift String
   // can't be null.
 
-  // PENDING S3-04: replace the constructor with `NepaliDate.parse(input)`.
   @Test(
     "OptimizationVerificationTests.Constructor_WithoutLeadingZeros_ParsesCorrectly",
     arguments: [
       ("2080/5/15", [2080, 5, 15]), ("2080/05/5", [2080, 5, 5]), ("2080/1/1", [2080, 1, 1]),
     ])
   func constructorWithoutLeadingZerosParsesCorrectly(input: String, expected: [Int]) throws {
-    let date = try bs(expected[0], expected[1], expected[2])
-    #expect(date.year == expected[0] && date.month == expected[1] && date.day == expected[2])
+    #expect(try NepaliDate.parse(input) == bs(expected[0], expected[1], expected[2]))
   }
 
   @Test("OptimizationVerificationTests.Operator_Equality_SameDates_ReturnsTrue")
@@ -251,5 +247,258 @@ struct OptimizationVerificationTests {
   @Test("OptimizationVerificationTests.Subtraction_CrossYear_CorrectDays")
   func subtractionCrossYearCorrectDays() throws {
     #expect(try bs(2080, 12, 1).lastDayOfMonth.days(until: bs(2081, 1, 1)) == 1)
+  }
+
+  // MARK: formatting (S3)
+
+  @Test(
+    "OptimizationVerificationTests.ToString_ProducesExactFormat",
+    arguments: [
+      ([2080, 5, 15], "2080/05/15"), ([2080, 1, 1], "2080/01/01"), ([2080, 12, 30], "2080/12/30"),
+      ([1901, 1, 1], "1901/01/01"), ([2199, 12, 30], "2199/12/30"), ([2000, 6, 9], "2000/06/09"),
+      ([2100, 10, 29], "2100/10/29"),
+    ])
+  func toStringProducesExactFormat(date: [Int], expected: String) throws {
+    #expect(try bs(date[0], date[1], date[2]).description == expected)
+  }
+
+  @Test("OptimizationVerificationTests.ToString_OutputIsExactly10Characters")
+  func toStringOutputIsExactly10Characters() throws {
+    let text = Array(try bs(2080, 5, 15).description)
+    #expect(text.count == 10 && text[4] == "/" && text[7] == "/")
+  }
+
+  @Test("OptimizationVerificationTests.ToString_AllMonthsZeroPadded")
+  func toStringAllMonthsZeroPadded() throws {
+    for month in 1...12 {
+      let text = try bs(2080, month, 1).description
+      #expect(text.dropFirst(5).prefix(2) == (month < 10 ? "0\(month)" : "\(month)"))
+    }
+  }
+
+  @Test("OptimizationVerificationTests.ToString_AllDaysZeroPadded")
+  func toStringAllDaysZeroPadded() throws {
+    for day in 1...(try bs(2080, 1, 1).monthLength) {
+      let text = try bs(2080, 1, day).description
+      #expect(text.dropFirst(8) == (day < 10 ? "0\(day)" : "\(day)"))
+    }
+  }
+
+  @Test("OptimizationVerificationTests.ToString_RoundtripsWithConstructor")
+  func toStringRoundtripsWithConstructor() throws {
+    for year in stride(from: 1901, through: 2199, by: 50) {
+      for month in 1...12 {
+        let date = try bs(year, month, 1)
+        #expect(NepaliDate(date.description) == date)
+      }
+    }
+  }
+
+  /// One `InlineData` row of the `ToString(format, separator, leadingZeros)` theories.
+  struct ShortRow: Sendable {
+    let order: DateOrder
+    let separator: Separator
+    let pad: Bool
+    let expected: String
+  }
+
+  @Test(
+    "OptimizationVerificationTests.ToString_WithFormatAndSeparator_ProducesCorrectOutput",
+    arguments: [
+      ShortRow(order: .ymd, separator: .slash, pad: true, expected: "2080/05/15"),
+      ShortRow(order: .ymd, separator: .dash, pad: true, expected: "2080-05-15"),
+      ShortRow(order: .ymd, separator: .dot, pad: true, expected: "2080.05.15"),
+      ShortRow(order: .ymd, separator: .underscore, pad: true, expected: "2080_05_15"),
+      ShortRow(order: .ymd, separator: .space, pad: true, expected: "2080 05 15"),
+      ShortRow(order: .ymd, separator: .backslash, pad: true, expected: "2080\\05\\15"),
+      ShortRow(order: .dmy, separator: .slash, pad: true, expected: "15/05/2080"),
+      ShortRow(order: .dmy, separator: .dash, pad: true, expected: "15-05-2080"),
+      ShortRow(order: .mdy, separator: .slash, pad: true, expected: "05/15/2080"),
+      ShortRow(order: .ydm, separator: .slash, pad: true, expected: "2080/15/05"),
+      ShortRow(order: .myd, separator: .slash, pad: true, expected: "05/2080/15"),
+      ShortRow(order: .dym, separator: .slash, pad: true, expected: "15/2080/05"),
+    ])
+  func toStringWithFormatAndSeparator(row: ShortRow) throws {
+    let date = try bs(2080, 5, 15)
+    #expect(date.short(order: row.order, separator: row.separator, pad: row.pad) == row.expected)
+  }
+
+  @Test(
+    "OptimizationVerificationTests.ToString_WithoutLeadingZeros_ProducesCorrectOutput",
+    arguments: [
+      ShortRow(order: .ymd, separator: .slash, pad: false, expected: "2080/5/15"),
+      ShortRow(order: .dmy, separator: .dash, pad: false, expected: "15-5-2080"),
+      ShortRow(order: .mdy, separator: .dot, pad: false, expected: "5.15.2080"),
+    ])
+  func toStringWithoutLeadingZeros(row: ShortRow) throws {
+    let date = try bs(2080, 5, 15)
+    #expect(date.short(order: row.order, separator: row.separator, pad: row.pad) == row.expected)
+  }
+
+  @Test("OptimizationVerificationTests.ToUnicodeString_DefaultFormat_ConvertsAllDigits")
+  func toUnicodeStringDefaultFormat() throws {
+    #expect(try bs(2080, 5, 15).short(lang: .nepali) == "२०८०/०५/१५")
+  }
+
+  @Test("OptimizationVerificationTests.ToUnicodeString_EachDigitConvertsCorrectly")
+  func toUnicodeStringEachDigit() throws {
+    let text = try bs(1902, 3, 4).short(lang: .nepali)
+    #expect(text == "१९०२/०३/०४")
+    for digit in ["१", "९", "०", "२", "३", "४"] { #expect(text.contains(digit)) }
+  }
+
+  @Test("OptimizationVerificationTests.ToUnicodeString_SeparatorsPreserved")
+  func toUnicodeStringSeparatorsPreserved() throws {
+    let text = try bs(2080, 5, 15).short(separator: .dash, lang: .nepali)
+    #expect(text.contains("-") && !text.contains("/"))
+  }
+
+  @Test("OptimizationVerificationTests.ToUnicodeString_SameLengthAsToString")
+  func toUnicodeStringSameLength() throws {
+    for year in stride(from: 1901, through: 2199, by: 100) {
+      let date = try bs(year, 6, 15)
+      #expect(date.description.count == date.short(lang: .nepali).count)
+    }
+  }
+
+  // MARK: lenient parsing (S3, D-06)
+
+  @Test(
+    "OptimizationVerificationTests.SmartDateParser_NepaliDigits_ParseCorrectly",
+    arguments: ["२०८०/०५/१५", "२०८०-०५-१५"])
+  func smartDateParserNepaliDigits(input: String) throws {
+    #expect(try lenient(input) == bs(2080, 5, 15))
+  }
+
+  @Test("OptimizationVerificationTests.SmartDateParser_PureEnglishDigits_NoConversionNeeded")
+  func smartDateParserPureEnglishDigits() throws {
+    #expect(try lenient("2080/05/15") == bs(2080, 5, 15))
+  }
+
+  @Test("OptimizationVerificationTests.SmartDateParser_MixedNepaliEnglishDigits_ParseCorrectly")
+  func smartDateParserMixedDigits() throws {
+    #expect(try lenient("2०८0/0५/१5") == bs(2080, 5, 15))
+  }
+
+  @Test(
+    "OptimizationVerificationTests.SmartDateParser_WithIndicators_RemovesAndParsesCorrectly",
+    arguments: [
+      "2080/05/15 B.S.", "2080/05/15 BS", "2080/05/15 V.S.", "2080/05/15 VS", "2080/05/15 bs",
+      "2080/05/15 v.s.",
+    ])
+  func smartDateParserWithIndicators(input: String) throws {
+    #expect(try lenient(input) == bs(2080, 5, 15))
+  }
+
+  @Test("OptimizationVerificationTests.SmartDateParser_WithNepaliKeywords_RemovesAndParses")
+  func smartDateParserWithNepaliKeywords() throws {
+    #expect(try lenient("15 Shrawan 2080 गते") == bs(2080, 4, 15))
+  }
+
+  @Test("OptimizationVerificationTests.SmartDateParser_WithExtraSpaces_ParsesCorrectly")
+  func smartDateParserWithExtraSpaces() throws {
+    #expect(try lenient("  2080 / 05 / 15  ") == bs(2080, 5, 15))
+  }
+
+  @Test(
+    "OptimizationVerificationTests.SmartDateParser_AllMonthNames_ParseCorrectly",
+    arguments: zip(
+      [
+        "15 Baisakh 2080", "15 Jestha 2080", "15 Asar 2080", "15 Shrawan 2080", "15 Bhadra 2080",
+        "15 Ashwin 2080", "15 Kartik 2080", "15 Mangsir 2080", "15 Poush 2080", "15 Magh 2080",
+        "15 Falgun 2080", "15 Chaitra 2080",
+      ], 1...12))
+  func smartDateParserAllMonthNames(input: String, month: Int) throws {
+    #expect(try lenient(input) == bs(2080, month, 15))
+  }
+
+  @Test(
+    "OptimizationVerificationTests.SmartDateParser_MonthNameDifferentPositions_ParsesCorrectly",
+    arguments: ["Baisakh 15, 2080", "2080 Baisakh 15"])
+  func smartDateParserMonthNamePositions(input: String) throws {
+    #expect(try lenient(input) == bs(2080, 1, 15))
+  }
+
+  @Test(
+    "OptimizationVerificationTests.SmartDateParser_NepaliUnicodeMonthNames_ParseCorrectly",
+    arguments: zip(["15 वैशाख 2080", "15 जेष्ठ 2080", "15 असार 2080", "15 श्रावण 2080"], 1...4))
+  func smartDateParserNepaliMonthNames(input: String, month: Int) throws {
+    #expect(try lenient(input) == bs(2080, month, 15))
+  }
+
+  // D-06: two-digit years are never expanded.
+  @Test("OptimizationVerificationTests.SmartDateParser_TwoDigitYear_AdjustedTo2000s")
+  func smartDateParserTwoDigitYear() {
+    expectError(.ambiguous) { _ = try NepaliDate.parseLenient("80/05/15") }
+  }
+
+  @Test("OptimizationVerificationTests.SmartDateParser_InvalidInput_ThrowsFormatException")
+  func smartDateParserInvalidInput() {
+    expectError(.unrecognized) { _ = try NepaliDate.parseLenient("not a date") }
+  }
+
+  // OptimizationVerificationTests.SmartDateParser_NullInput_ThrowsException: n/a, a Swift String
+  // can't be null.
+
+  @Test("OptimizationVerificationTests.SmartDateParser_EmptyInput_ThrowsException")
+  func smartDateParserEmptyInput() {
+    expectError(.unrecognized) { _ = try NepaliDate.parseLenient("") }
+  }
+
+  @Test("OptimizationVerificationTests.SmartDateParser_WhitespaceInput_ThrowsException")
+  func smartDateParserWhitespaceInput() {
+    expectError(.unrecognized) { _ = try NepaliDate.parseLenient("   ") }
+  }
+
+  @Test("OptimizationVerificationTests.SmartDateParser_TryParse_ValidInput_ReturnsTrue")
+  func smartDateParserTryParseValid() {
+    #expect((try? NepaliDate.parseLenient("2080/05/15"))?.year == 2080)
+  }
+
+  @Test("OptimizationVerificationTests.SmartDateParser_TryParse_InvalidInput_ReturnsFalse")
+  func smartDateParserTryParseInvalid() {
+    #expect((try? NepaliDate.parseLenient("garbage")) == nil)
+  }
+
+  // OptimizationVerificationTests.SmartDateParser_TryParse_NullInput_ReturnsFalse: n/a, a Swift
+  // String can't be null.
+
+  @Test("OptimizationVerificationTests.ToString_EveryMonthFirstDay_RoundtripsViaConstructor")
+  func toStringEveryMonthFirstDayRoundtrips() throws {
+    var failures = 0
+    for year in 1901...2199 {
+      for month in 1...12 {
+        let date = try bs(year, month, 1)
+        if NepaliDate(date.description) != date { failures += 1 }
+      }
+    }
+    #expect(failures == 0)
+  }
+
+  @Test("OptimizationVerificationTests.UnicodeConversion_AllDigits_RoundtripCorrectly")
+  func unicodeConversionRoundtrip() throws {
+    for year in 2070...2090 {
+      for month in 1...12 {
+        let date = try bs(year, month, 15)
+        #expect(try lenient(date.short(lang: .nepali)) == date)
+      }
+    }
+  }
+
+  @Test("OptimizationVerificationTests.ToLongDateString_Default_ContainsMonthNameAndDay")
+  func toLongDateStringDefault() throws {
+    let text = try bs(2080, 5, 15).long()
+    #expect(text.contains("15") && text.contains("2080") && text.contains(","))
+  }
+
+  @Test("OptimizationVerificationTests.ToLongDateString_WithDayName_ContainsDayOfWeek")
+  func toLongDateStringWithDayName() throws {
+    let date = try bs(2080, 5, 15)
+    #expect(date.long(weekday: true).contains(date.weekday.name()))
+  }
+
+  @Test("OptimizationVerificationTests.ToLongDateString_WithoutYear_DoesNotContainYear")
+  func toLongDateStringWithoutYear() throws {
+    #expect(!(try bs(2080, 5, 15).long(year: false).contains("2080")))
   }
 }
