@@ -68,7 +68,8 @@ struct NepaliDateConstructionTests {
 
   // D-06, as the row above.
   @Test(
-    "NepaliDateConstructionTests.TryParse_AutoAdjust_MonthOverflowWithBoundaryDay_SwapsAsDocumented")
+    "NepaliDateConstructionTests.TryParse_AutoAdjust_MonthOverflowWithBoundaryDay_SwapsAsDocumented"
+  )
   func tryParseAutoAdjustMonthOverflow() {
     #expect((try? NepaliDate.parseLenient("2080/13/12")) == nil)
   }

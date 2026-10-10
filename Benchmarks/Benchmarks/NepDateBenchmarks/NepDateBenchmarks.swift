@@ -80,6 +80,8 @@ let benchmarks: @Sendable () -> Void = {
   Benchmark("B5a", configuration: configuration) { benchmark in
     var buffer = ""
     buffer.reserveCapacity(256)
+    // The buffer's one allocation is setup, not part of what B5a measures.
+    benchmark.startMeasurement()
     for _ in benchmark.scaledIterations {
       for date in dates {
         buffer.removeAll(keepingCapacity: true)
