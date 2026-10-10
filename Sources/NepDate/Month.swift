@@ -16,7 +16,7 @@ public enum Month: Int, Sendable, CaseIterable, Comparable {
   case kartik
   /// मंसिर, month 8.
   case mangsir
-  /// पुस, month 9.
+  /// पुष, month 9.
   case poush
   /// माघ, month 10.
   case magh

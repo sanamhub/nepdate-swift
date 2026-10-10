@@ -99,12 +99,19 @@ public struct FiscalYear: Sendable, Hashable, Comparable {
   /// - Parameter lang: The digits to use.
   /// - Returns: The start year, a slash and the last two digits of the next year.
   public func label(_ lang: Lang = .english) -> String {
+    var counter = ByteCounter()
+    writeLabel(lang: lang, to: &counter)
     var output = ""
-    appendDigits(startYear, minWidth: 0, lang: lang, to: &output)
-    output.append("/")
-    // The remainder is made non-negative so a negative start year still gives two digits.
-    appendDigits(((startYear % 100) + 101) % 100, minWidth: 2, lang: lang, to: &output)
+    output.reserveCapacity(counter.count)
+    writeLabel(lang: lang, to: &output)
     return output
+  }
+
+  func writeLabel<Sink: TextSink>(lang: Lang, to sink: inout Sink) {
+    writeDigits(startYear, minWidth: 0, lang: lang, to: &sink)
+    sink.appendASCII(0x2F)  // "/"
+    // The remainder is made non-negative so a negative start year still gives two digits.
+    writeDigits(((startYear % 100) + 101) % 100, minWidth: 2, lang: lang, to: &sink)
   }
 
   /// Orders fiscal years by start year.
@@ -124,50 +131,5 @@ extension NepaliDate {
   public var quarter: Quarter {
     // (m + 8) % 12 counts months from Shrawan; m is 1...12, so the fallback is never taken.
     Quarter(rawValue: (Int(m) + 8) % 12 / 3 + 1) ?? .q1
-  }
-}
-
-/// Appends the decimal digits of `value`, zero-padded to `minWidth`, in ASCII or Devanagari.
-/// Writes digit by digit from the highest power of ten, so it needs no buffer.
-func appendDigits(_ value: Int, minWidth: Int, lang: Lang, to output: inout String) {
-  if value < 0 { output.append("-") }
-  let magnitude = value.magnitude
-  var divisor: UInt = 1
-  var width = 1
-  while magnitude / divisor >= 10 {
-    divisor *= 10
-    width += 1
-  }
-  for _ in width..<Swift.max(minWidth, width) { appendDigit(0, lang: lang, to: &output) }
-  var rest = magnitude
-  while divisor > 0 {
-    appendDigit(rest / divisor, lang: lang, to: &output)
-    rest %= divisor
-    divisor /= 10
-  }
-}
-
-/// Appends one digit, 0 to 9.
-func appendDigit(_ digit: UInt, lang: Lang, to output: inout String) {
-  switch lang {
-  case .english:
-    output.unicodeScalars.append(Unicode.Scalar(UInt8(truncatingIfNeeded: 0x30 + digit)))
-  case .nepali: output.append(devanagariDigit(digit))
-  }
-}
-
-/// The Devanagari digit for 0 to 9, as a string literal so it costs no allocation.
-func devanagariDigit(_ digit: UInt) -> String {
-  switch digit {
-  case 0: return "०"
-  case 1: return "१"
-  case 2: return "२"
-  case 3: return "३"
-  case 4: return "४"
-  case 5: return "५"
-  case 6: return "६"
-  case 7: return "७"
-  case 8: return "८"
-  default: return "९"
   }
 }

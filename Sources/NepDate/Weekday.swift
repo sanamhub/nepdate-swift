@@ -1,17 +1,17 @@
 /// A day of the week. The raw value counts from Sunday = 0, as in Nepal.
 public enum Weekday: Int, Sendable, CaseIterable {
-  /// आइतबार.
+  /// आइतवार.
   case sunday = 0
-  /// सोमबार.
+  /// सोमवार.
   case monday
-  /// मङ्गलबार.
+  /// मङ्गलवार.
   case tuesday
-  /// बुधबार.
+  /// बुधवार.
   case wednesday
-  /// बिहिबार.
+  /// बिहिवार.
   case thursday
-  /// शुक्रबार.
+  /// शुक्रवार.
   case friday
-  /// शनिबार.
+  /// शनिवार.
   case saturday
 }
