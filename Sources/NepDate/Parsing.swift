@@ -246,8 +246,22 @@ func storeField(_ value: Int, at group: Int, in fields: inout (Int, Int, Int)) {
   }
 }
 
+/// Whether the bytes at `i` are the Kelvin sign U+212A (E2 84 AA), all before `end`.
+@inlinable
+func isKelvinSign<Bytes: Collection>(
+  _ utf8: Bytes, at i: Bytes.Index, end: Bytes.Index
+) -> Bool where Bytes.Element == UInt8 {
+  guard utf8[i] == 0xE2 else { return false }
+  var j = utf8.index(after: i)
+  guard j != end, utf8[j] == 0x84 else { return false }
+  j = utf8.index(after: j)
+  return j != end && utf8[j] == 0xAA
+}
+
 /// The month 1 to 12 of a lenient word, 0 for a word that is dropped, or `nil` for an unknown
-/// word. ASCII letters compare case-insensitively; every other byte must match exactly.
+/// word. Words fold as PARSING §2 says, which is what Python `str.lower()` maps onto ASCII: `A`
+/// to `Z` fold to lower case and the Kelvin sign U+212A folds to `k`; every other byte must
+/// match exactly, so the long s U+017F does not match `s`.
 @inlinable
 func lenientWord<Bytes: Collection>(
   _ utf8: Bytes, _ range: Range<Bytes.Index>
@@ -261,21 +275,29 @@ func lenientWord<Bytes: Collection>(
     let wordLength = Int(entries[entry + 1])
     let month = Int(entries[entry + 2])
     entry += 3
-    guard wordLength == length else { continue }
+    // Folding only shrinks a word (the 3-byte Kelvin sign becomes 1 byte), never grows it.
+    guard wordLength <= length else { continue }
+    let end = offset + wordLength
     var i = range.lowerBound
     var k = offset
     var same = true
     while i != range.upperBound {
       var byte = utf8[i]
-      if byte >= 0x41 && byte <= 0x5A { byte += 0x20 }
-      if byte != bytes[k] {
+      var width = 1
+      if byte >= 0x41 && byte <= 0x5A {
+        byte += 0x20
+      } else if isKelvinSign(utf8, at: i, end: range.upperBound) {
+        byte = 0x6B  // k
+        width = 3
+      }
+      if k == end || byte != bytes[k] {
         same = false
         break
       }
-      utf8.formIndex(after: &i)
+      utf8.formIndex(&i, offsetBy: width)
       k += 1
     }
-    if same { return month }
+    if same && k == end { return month }
   }
   return nil
 }

@@ -174,7 +174,7 @@ struct ParsingTests {
   @Test("S3-04 AC and S3-05 AC1: parse.tsv, strict and lenient")
   func parseVectors() throws {
     let file = try VectorFile("parse.tsv", separator: "\t")
-    #expect(file.rows.count == 63)
+    #expect(file.rows.count == 67)
     var log = FailureLog()
     for (line, fields) in file.rows {
       guard fields.count == 3 else {
