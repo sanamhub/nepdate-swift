@@ -6,6 +6,7 @@ import PackageDescription
 // (see CONTRIBUTING.md) and the products are referenced by that name.
 let package = Package(
   name: "Examples",
+  platforms: [.macOS(.v12)],
   dependencies: [
     .package(path: "..")
   ],
