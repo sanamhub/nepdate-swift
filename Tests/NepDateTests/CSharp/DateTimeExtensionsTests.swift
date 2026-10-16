@@ -28,7 +28,9 @@
       }
     }
 
-    @Test("DateTimeExtensionsTests.ToNepaliDate_DateBeforeMinSupported_ThrowsArgumentOutOfRangeException")
+    @Test(
+      "DateTimeExtensionsTests.ToNepaliDate_DateBeforeMinSupported_ThrowsArgumentOutOfRangeException"
+    )
     func beforeMin() throws {
       // The last second of AD 1844-04-10, one second before the first supported instant.
       expectError(.outOfRange) {
@@ -36,7 +38,9 @@
       }
     }
 
-    @Test("DateTimeExtensionsTests.ToNepaliDate_DateAfterMaxSupported_ThrowsArgumentOutOfRangeException")
+    @Test(
+      "DateTimeExtensionsTests.ToNepaliDate_DateAfterMaxSupported_ThrowsArgumentOutOfRangeException"
+    )
     func afterMax() throws {
       // The first instant of AD 2143-04-16, one day after the last supported day.
       expectError(.outOfRange) {
