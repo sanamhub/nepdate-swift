@@ -48,7 +48,7 @@ public struct NepaliDate: Sendable, BitwiseCopyable, Hashable, Comparable, Codab
     public func appendLong(to output: inout String, weekday: Bool = false, year: Bool = true,
                            pad: Bool = true, lang: Lang = .english)
     public func appendFormat(_ pattern: String, to output: inout String, lang: Lang = .english)
-    // Codable: single string "YYYY-MM-DD" (D-11); decoding uses the strict parser.
+    // Codable: single string "YYYY-MM-DD" (D-11); decoding accepts exactly the encoded form.
 }
 
 #if canImport(Foundation)

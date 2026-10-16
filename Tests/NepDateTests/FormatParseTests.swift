@@ -261,6 +261,18 @@ struct ParsingTests {
       Issue.record("expected dataCorrupted, got \(error)")
     }
     #expect(corrupted)
+    // D-11: the interchange form is YYYY-MM-DD, so a slash-separated date is rejected even though
+    // parse(_:) accepts it.
+    for text in ["2081/04/15", "2081-4-15", "२०८१-०४-१५"] {
+      do {
+        _ = try JSONDecoder().decode(NepaliDate.self, from: Data("\"\(text)\"".utf8))
+        Issue.record("expected \(text) to be rejected")
+      } catch DecodingError.dataCorrupted {
+        // Expected.
+      } catch {
+        Issue.record("expected dataCorrupted for \(text), got \(error)")
+      }
+    }
   }
 
   @Test("S3-06 AC3: description round-trips through init?(_:) for every golden date")
