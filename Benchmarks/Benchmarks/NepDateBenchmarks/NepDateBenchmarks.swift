@@ -153,6 +153,7 @@ let benchmarks: @Sendable () -> Void = {
 
   Benchmark("B6", configuration: configuration) { benchmark in
     for _ in benchmark.scaledIterations {
+      blackHole(String(repeating: "x", count: 16))  // negative control: one malloc per iteration
       for text in texts { blackHole(try? NepaliDate.parse(text)) }
     }
   }

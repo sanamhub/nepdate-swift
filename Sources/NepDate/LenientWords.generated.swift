@@ -64,7 +64,7 @@ enum LenientWords {
   /// Three entries per word: offset into `bytes`, byte length, and month 1 to 12, or 0 for a
   /// word that is dropped.
   @usableFromInline static let entries: [UInt16] = [
-    0, 8, 1, // baishakh
+    0, 8, 1, // aaishakh
     8, 7, 1, // baisakh
     15, 7, 1, // baishak
     22, 8, 1, // vaishakh
