@@ -10,6 +10,9 @@ first.
 Swift 6.0 or later. Before a PR, run `./scripts/ci.sh` (macOS, Linux) or `./scripts/ci.ps1`
 (Windows, PowerShell 7). The last line reads `ci: 7/7 gates passed`.
 
+Check the repo out into a folder named `nepdate-swift`. The `Examples` package depends on it by
+path, and SwiftPM derives a path dependency's package identity from its directory name.
+
 ## Commits and PRs
 
 - [Conventional Commits](https://www.conventionalcommits.org/) with the task ID first when there is
