@@ -30,14 +30,14 @@ struct NepaliDatePropertiesTests {
   }
 
   #if canImport(Foundation)
-  @Test("NepaliDatePropertiesTests.Today_ReturnsCurrentNepaliDate")
-  func todayReturnsCurrentNepaliDate() throws {
-    let utcZone = try zone("UTC")
-    let before = try NepaliDate(Date(), in: utcZone)
-    let today = NepaliDate.today(in: utcZone)
-    let after = try NepaliDate(Date(), in: utcZone)
-    #expect(before <= today && today <= after)
-  }
+    @Test("NepaliDatePropertiesTests.Today_ReturnsCurrentNepaliDate")
+    func todayReturnsCurrentNepaliDate() throws {
+      let utcZone = try zone("UTC")
+      let before = try NepaliDate(Date(), in: utcZone)
+      let today = NepaliDate.today(in: utcZone)
+      let after = try NepaliDate(Date(), in: utcZone)
+      #expect(before <= today && today <= after)
+    }
   #endif
 
   @Test("NepaliDatePropertiesTests.DayOfYear_FirstDayOfYear_Returns1")
