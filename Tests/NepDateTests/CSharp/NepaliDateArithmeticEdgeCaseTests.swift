@@ -1,5 +1,9 @@
 import Testing
 
+#if canImport(Foundation)
+  import Foundation
+#endif
+
 @testable import NepDate
 
 @Suite("NepaliDateArithmeticEdgeCaseTests")
@@ -81,30 +85,39 @@ struct NepaliDateArithmeticEdgeCaseTests {
   // NepaliDateArithmeticEdgeCaseTests.AddMonths_FractionalValue_ReturnsDateFurtherThanZeroMonths:
   // D-02.
 
-  // The DateTime rows need `init(_:in:)` from S4-04. Until then each builds the AD date with
-  // `init(gregorianYear:month:day:)`, which has no time of day to ignore.
-  // PENDING S4-04: build from a `Date` at 00:00 in `Asia/Kathmandu`.
+  // The DateTime rows use init(_:in:), which ignores the time of day and reads the calendar date
+  // in the given zone (S4-04). utc(_:_:_:seconds:) and zone(_:) are shared with FoundationTests.
+  #if canImport(Foundation)
   @Test("NepaliDateArithmeticEdgeCaseTests.Constructor_DateTimeWithMidnightTime_IgnoresTime")
   func constructorDateTimeWithMidnightTime() throws {
-    #expect(try ad(2023, 9, 1) == bs(2080, 5, 15))
+    let utcZone = try zone("UTC")
+    #expect(try NepaliDate(utc(2023, 9, 1, seconds: 0), in: utcZone) == bs(2080, 5, 15))
   }
 
-  // PENDING S4-04: build from a `Date` at 12:30:45 in `Asia/Kathmandu`.
   @Test("NepaliDateArithmeticEdgeCaseTests.Constructor_DateTimeWithNoonTime_IgnoresTime")
   func constructorDateTimeWithNoonTime() throws {
-    #expect(try ad(2023, 9, 1) == bs(2080, 5, 15))
+    let utcZone = try zone("UTC")
+    let noon = utc(2023, 9, 1, seconds: 12 * 3600 + 30 * 60 + 45)
+    #expect(try NepaliDate(noon, in: utcZone) == bs(2080, 5, 15))
   }
 
-  // PENDING S4-04: build from a `Date` at 23:59:59 in `Asia/Kathmandu`.
   @Test("NepaliDateArithmeticEdgeCaseTests.Constructor_DateTimeWithEndOfDayTime_IgnoresTime")
   func constructorDateTimeWithEndOfDayTime() throws {
-    #expect(try ad(2023, 9, 1) == bs(2080, 5, 15))
+    let utcZone = try zone("UTC")
+    #expect(try NepaliDate(utc(2023, 9, 1, seconds: 86_399), in: utcZone) == bs(2080, 5, 15))
   }
 
   @Test(
-    "NepaliDateArithmeticEdgeCaseTests.Constructor_TwoDateTimesOnSameEnglishDateDifferentTimes_ProduceSameNepaliDate",
-    .disabled("PENDING S4-04: needs init(_:in:) with two Date values"))
-  func constructorTwoDateTimesOnSameEnglishDate() {}
+    "NepaliDateArithmeticEdgeCaseTests.Constructor_TwoDateTimesOnSameEnglishDateDifferentTimes_ProduceSameNepaliDate"
+  )
+  func constructorTwoDateTimesOnSameEnglishDate() throws {
+    let utcZone = try zone("UTC")
+    let early = try NepaliDate(utc(2023, 9, 1, seconds: 0), in: utcZone)
+    let late = try NepaliDate(utc(2023, 9, 1, seconds: 23 * 3600 + 59 * 60 + 59), in: utcZone)
+    #expect(early == late)
+    #expect(early == (try bs(2080, 5, 15)))
+  }
+  #endif
 
   // The TryParse auto-adjust rows are `parseLenient` (D-06): no swapping, no two-digit years.
   @Test(

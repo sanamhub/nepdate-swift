@@ -1,8 +1,12 @@
 import Testing
 
+#if canImport(Foundation)
+  import Foundation
+#endif
+
 @testable import NepDate
 
-// D-09 as in NepaliDateRangeTests.swift. The `Current*` rows need `today(in:)` (D-14, S4-04).
+// D-09 as in NepaliDateRangeTests.swift. The `Current*` rows are D-14 and use `today(in:)` (S4-04).
 @Suite("NepaliDateRangeExtendedTests")
 struct NepaliDateRangeExtendedTests {
   @Test("NepaliDateRangeExtendedTests.ForCalendarYear_StartsAtBaishakhOne_EndsAtChaitraEnd")
@@ -18,45 +22,63 @@ struct NepaliDateRangeExtendedTests {
     #expect((365...366).contains(try NepaliDateRange.year(2080).count))
   }
 
-  @Test(
-    "NepaliDateRangeExtendedTests.CurrentMonth_StartIsFirstDayOfCurrentMonth",
-    .disabled("PENDING S4-04: needs today(in:) (D-14)"))
-  func currentMonthStart() {}
+  // D-14: C# reads a static Today; this port compares against today(in:). The tests inject the
+  // fixed clock so the result is deterministic (S4-04).
+  #if canImport(Foundation)
+  @Test("NepaliDateRangeExtendedTests.CurrentMonth_StartIsFirstDayOfCurrentMonth")
+  func currentMonthStart() throws {
+    let today = NepaliDate.today(in: try zone("UTC"), now: fixedClock)
+    let range = try NepaliDateRange.month(year: today.year, month: today.month)
+    #expect(range.lowerBound == today.firstDayOfMonth)
+  }
 
-  @Test(
-    "NepaliDateRangeExtendedTests.CurrentMonth_EndIsLastDayOfCurrentMonth",
-    .disabled("PENDING S4-04: needs today(in:) (D-14)"))
-  func currentMonthEnd() {}
+  @Test("NepaliDateRangeExtendedTests.CurrentMonth_EndIsLastDayOfCurrentMonth")
+  func currentMonthEnd() throws {
+    let today = NepaliDate.today(in: try zone("UTC"), now: fixedClock)
+    let range = try NepaliDateRange.month(year: today.year, month: today.month)
+    #expect(range.upperBound == today.lastDayOfMonth)
+  }
 
-  @Test(
-    "NepaliDateRangeExtendedTests.CurrentMonth_ContainsToday",
-    .disabled("PENDING S4-04: needs today(in:) (D-14)"))
-  func currentMonthContainsToday() {}
+  @Test("NepaliDateRangeExtendedTests.CurrentMonth_ContainsToday")
+  func currentMonthContainsToday() throws {
+    let today = NepaliDate.today(in: try zone("UTC"), now: fixedClock)
+    let range = try NepaliDateRange.month(year: today.year, month: today.month)
+    #expect(range.contains(today))
+  }
 
-  @Test(
-    "NepaliDateRangeExtendedTests.CurrentFiscalYear_ContainsToday",
-    .disabled("PENDING S4-04: needs today(in:) (D-14)"))
-  func currentFiscalYearContainsToday() {}
+  @Test("NepaliDateRangeExtendedTests.CurrentFiscalYear_ContainsToday")
+  func currentFiscalYearContainsToday() throws {
+    let today = NepaliDate.today(in: try zone("UTC"), now: fixedClock)
+    let range = try today.fiscalYear.range()
+    #expect(range.contains(today))
+  }
 
-  @Test(
-    "NepaliDateRangeExtendedTests.CurrentFiscalYear_StartIsShrawan",
-    .disabled("PENDING S4-04: needs today(in:) (D-14)"))
-  func currentFiscalYearStart() {}
+  @Test("NepaliDateRangeExtendedTests.CurrentFiscalYear_StartIsShrawan")
+  func currentFiscalYearStart() throws {
+    let today = NepaliDate.today(in: try zone("UTC"), now: fixedClock)
+    #expect(try today.fiscalYear.start().month == 4)
+  }
 
-  @Test(
-    "NepaliDateRangeExtendedTests.CurrentFiscalYear_EndIsAshadh",
-    .disabled("PENDING S4-04: needs today(in:) (D-14)"))
-  func currentFiscalYearEnd() {}
+  @Test("NepaliDateRangeExtendedTests.CurrentFiscalYear_EndIsAshadh")
+  func currentFiscalYearEnd() throws {
+    let today = NepaliDate.today(in: try zone("UTC"), now: fixedClock)
+    #expect(try today.fiscalYear.end().month == 3)
+  }
 
-  @Test(
-    "NepaliDateRangeExtendedTests.CurrentCalendarYear_ContainsToday",
-    .disabled("PENDING S4-04: needs today(in:) (D-14)"))
-  func currentCalendarYearContainsToday() {}
+  @Test("NepaliDateRangeExtendedTests.CurrentCalendarYear_ContainsToday")
+  func currentCalendarYearContainsToday() throws {
+    let today = NepaliDate.today(in: try zone("UTC"), now: fixedClock)
+    let range = try NepaliDateRange.year(today.year)
+    #expect(range.contains(today))
+  }
 
-  @Test(
-    "NepaliDateRangeExtendedTests.CurrentCalendarYear_StartIsBaishakh1",
-    .disabled("PENDING S4-04: needs today(in:) (D-14)"))
-  func currentCalendarYearStart() {}
+  @Test("NepaliDateRangeExtendedTests.CurrentCalendarYear_StartIsBaishakh1")
+  func currentCalendarYearStart() throws {
+    let today = NepaliDate.today(in: try zone("UTC"), now: fixedClock)
+    let range = try NepaliDateRange.year(today.year)
+    #expect(range.lowerBound == (try bs(today.year, 1, 1)))
+  }
+  #endif
 
   // NepaliDateRangeExtendedTests.SplitByFiscalQuarter_EmptyRange_ReturnsEmptyArray: D-09.
   // NepaliDateRangeExtendedTests.SplitByFiscalQuarter_RangeWithinOneQuarter_ReturnsSingleRange:

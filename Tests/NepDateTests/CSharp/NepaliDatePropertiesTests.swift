@@ -1,5 +1,9 @@
 import Testing
 
+#if canImport(Foundation)
+  import Foundation
+#endif
+
 @testable import NepDate
 
 @Suite("NepaliDatePropertiesTests")
@@ -25,10 +29,16 @@ struct NepaliDatePropertiesTests {
     #expect(try bs(2080, 5, 15).bsMonth == .bhadra)
   }
 
-  @Test(
-    "NepaliDatePropertiesTests.Today_ReturnsCurrentNepaliDate",
-    .disabled("PENDING S4-04: needs today(in:)"))
-  func todayReturnsCurrentNepaliDate() {}
+  #if canImport(Foundation)
+  @Test("NepaliDatePropertiesTests.Today_ReturnsCurrentNepaliDate")
+  func todayReturnsCurrentNepaliDate() throws {
+    let utcZone = try zone("UTC")
+    let before = try NepaliDate(Date(), in: utcZone)
+    let today = NepaliDate.today(in: utcZone)
+    let after = try NepaliDate(Date(), in: utcZone)
+    #expect(before <= today && today <= after)
+  }
+  #endif
 
   @Test("NepaliDatePropertiesTests.DayOfYear_FirstDayOfYear_Returns1")
   func dayOfYearFirstDayOfYearReturns1() throws {
