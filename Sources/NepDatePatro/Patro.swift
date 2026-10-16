@@ -117,7 +117,7 @@ extension NepaliDate {
 }
 
 /// Queries over the whole patro data set (PATRO §2).
-public enum Patro {
+public enum Patro: Sendable {
   /// The smallest range holding every day with patro data, BS 2077-01-01 to 2084-08-20.
   public static var coverage: NepaliDateRange {
     NepaliDateRange(

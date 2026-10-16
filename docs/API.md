@@ -120,7 +120,7 @@ public struct Named: Sendable, Hashable {                     // 2 bytes: an id 
     public func name(_ lang: Lang = .english) -> String
 }
 extension NepaliDate { public var calendarInfo: CalendarInfo { get } }    // never fails
-public enum Patro {
+public enum Patro: Sendable {
     public static var coverage: NepaliDateRange { get }
     public static var publicHolidays: some Sequence<NepaliDate> { get }  // ascending
 }
