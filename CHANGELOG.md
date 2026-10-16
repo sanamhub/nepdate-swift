@@ -28,3 +28,8 @@ prefix (ADR-0005).
 - Strict `parse`, `init?(_:)`, lenient `parseLenient` with the generated month list, and
   `Codable` as `"YYYY-MM-DD"` (S3-04 to S3-06).
 - Benchmarks B5, B5a and B6; the `Fuzz` package and CI job (S3-08).
+- `NepDatePatro` product with tithi, public holiday and event tables, `calendarInfo`, `Patro.coverage`
+  and `Patro.publicHolidays` (S4-01, S4-02).
+- `Examples` package and the patro-free core gate (S4-03).
+- `Date` and `TimeZone` interop: `init(_:in:)`, `date(in:)` and `today(in:)` (S4-04).
+- Benchmarks B7, B8 and B7-sorted (S4-05).
