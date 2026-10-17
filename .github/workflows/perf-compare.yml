@@ -21,10 +21,6 @@ on:
         required: true
         default: "5"
         type: string
-  # Temporary while S6 is on a branch: workflow_dispatch only resolves workflows on the default
-  # branch, where this file does not exist yet. Removed before the pull request is finished.
-  push:
-    branches: [feat/S6-perf]
 
 permissions:
   contents: read
@@ -135,40 +131,6 @@ jobs:
           grep -E '^--[0-9]+--' results/b5-memcheck.log | sed 's/^--[0-9]*-- //' \
             | sort | uniq -c | sort -rn | head -n 10 || true
           head -n 120 results/b5-massif.txt || true
-      - name: B5 malloc stack (Linux)
-        if: runner.os == 'Linux'
-        shell: bash
-        run: |
-          set -uo pipefail
-          sudo apt-get install -y -qq gdb
-          swift build -c release --package-path Benchmarks --product b5-profile
-          bin="$(swift build -c release --package-path Benchmarks --show-bin-path)/b5-profile"
-          cat > results/b5.gdb <<'GDB'
-          set pagination off
-          set confirm off
-          set breakpoint pending on
-          break malloc if $rdi == 96
-          commands
-            silent
-            printf "malloc 96\n"
-            bt 16
-            continue
-          end
-          run
-          GDB
-          gdb -batch -nx -x results/b5.gdb --args "$bin" 5 > results/b5-gdb.txt 2>&1 || true
-          grep -A 16 -m 4 'malloc 96' results/b5-gdb.txt || true
-      - name: Size breakdown (macOS)
-        if: runner.os == 'macOS'
-        shell: bash
-        run: |
-          set -euo pipefail
-          swift build -c release --package-path Examples
-          bin="$(swift build -c release --package-path Examples --show-bin-path)"
-          for name in baseline core-only with-patro; do strip "$bin/$name"; done
-          python3 Benchmarks/scripts/size-breakdown.py \
-            --baseline "$bin/baseline" --core-only "$bin/core-only" --with-patro "$bin/with-patro" \
-            | tee results/size-breakdown.md
       - name: Aggregate the rounds
         shell: bash
         run: |
