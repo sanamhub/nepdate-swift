@@ -8,7 +8,7 @@ import Foundation
 import Testing
 
 import BenchmarkInputs
-import NepaliDateConverter
+import NRLNishan
 
 #if canImport(nepali_date_picker_core)
   import nepali_date_picker_core
@@ -143,7 +143,7 @@ func benchmarkInputsMatchSharedData() throws {
 @Test("nrlnishan agrees with shared/data on 62 of 64 B1 dates and 59 of 64 B2 dates")
 func nrlnishanAgreement() throws {
   let shared = try SharedDataDates()
-  let converter = NepaliDateConverter.DateConverter()
+  let converter = NRLNishan.DateConverter()
   var englishAgrees = 0
   var nepaliAgrees = 0
   var details: [String] = []

@@ -17,11 +17,11 @@ import PackageDescription
       checksum: "57f64dac9083490e4aabf65b768b919429ffe7fb89f025a5027311bed2011ae4")
   ]
   let competitorDependencies: [Target.Dependency] = [
-    "NepaliDateConverter", .target(name: "nepali_date_picker_core"),
+    "NRLNishan", .target(name: "nepali_date_picker_core"),
   ]
 #else
   let shivathapaaTargets: [Target] = []
-  let competitorDependencies: [Target.Dependency] = ["NepaliDateConverter"]
+  let competitorDependencies: [Target.Dependency] = ["NRLNishan"]
 #endif
 
 let package = Package(
@@ -35,9 +35,10 @@ let package = Package(
     .target(
       name: "BenchmarkInputs",
       dependencies: [.product(name: "NepDate", package: "nepdate-swift")]),
-    // The MIT source of nrlnishan/NepaliDateConverter, unchanged, with its licence.
+    // The MIT source of nrlnishan/NepaliDateConverter, unchanged, with its licence. The target is
+    // named NRLNishan because the shivathapaa framework also declares a `NepaliDateConverter`.
     .target(
-      name: "NepaliDateConverter",
+      name: "NRLNishan",
       path: "Vendor/NepaliDateConverter",
       exclude: ["LICENSE", "README.md"]),
     .executableTarget(
@@ -52,7 +53,9 @@ let package = Package(
       plugins: [.plugin(name: "BenchmarkPlugin", package: "benchmark")]),
     .executableTarget(
       name: "CompetitorBenchmarks",
-      dependencies: competitorDependencies + [.product(name: "Benchmark", package: "benchmark")],
+      dependencies: competitorDependencies + [
+        "BenchmarkInputs", .product(name: "Benchmark", package: "benchmark"),
+      ],
       path: "Benchmarks/CompetitorBenchmarks",
       plugins: [.plugin(name: "BenchmarkPlugin", package: "benchmark")]),
     .executableTarget(

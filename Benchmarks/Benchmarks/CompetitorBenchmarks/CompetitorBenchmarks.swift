@@ -6,7 +6,7 @@
 
 import Benchmark
 import BenchmarkInputs
-import NepaliDateConverter
+import NRLNishan
 
 #if canImport(nepali_date_picker_core)
   import nepali_date_picker_core
@@ -23,7 +23,7 @@ let benchmarks: @Sendable () -> Void = {
   let ad = inputs.ad
 
   // The converter and its values are setup, so the timed loop measures one conversion only.
-  let nrlnishan = NepaliDateConverter.DateConverter()
+  let nrlnishan = NRLNishan.DateConverter()
   let bsModels = bs.map { DateModel(year: $0.year, month: $0.month, day: $0.day) }
   let adModels = ad.map { DateModel(year: $0.year, month: $0.month, day: $0.day) }
 
