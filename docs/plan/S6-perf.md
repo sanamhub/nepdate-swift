@@ -95,6 +95,75 @@ AC3: no production code for the size options is written in S6; the reviewer pick
 
 AC: docs gate green, no threshold lowered, `ci: 8/8 gates passed`.
 
+## Size breakdown and options (S6-04)
+
+Measured on macos-latest, arm64, `swift build -c release`, stripped, by `perf-size` run 39069711434.
+The unstripped copies gave the symbol sizes; Apple's `nm -S` reports zero sizes for Mach-O, so a
+text symbol's size is the distance to the next text symbol.
+
+| Item | Baseline to with-patro |
+|---|---:|
+| file size | +226,032 bytes |
+
+| Section | Delta from baseline | Share |
+|---|---:|---:|
+| `__TEXT.__text` | +92,880 | 41 % |
+| `__TEXT.__cstring` | +66,169 | 29 % |
+| `__DATA.__data` | +45,072 | 20 % |
+| `__DATA.__bss` (zerofill, not in the file) | +7,048 | 3 % |
+| `__TEXT.__const` | +5,934 | 3 % |
+| `__DATA_CONST.__const` | +4,560 | 2 % |
+| Swift metadata, stubs, unwind | +3,550 | 2 % |
+| section sum | +229,877 | |
+| file delta minus section sum (page rounding, load commands) | -3,845 | |
+
+The patro product alone, against `core-only`, is +117,872 bytes:
+
+| Part | Bytes | What it is |
+|---|---:|---|
+| `__TEXT.__cstring` | +65,872 | the 753 bilingual names, 62,812 bytes of string content |
+| `__TEXT.__text` | +41,964 | `PatroData.name` is 36,024 of it; the rest is `calendarInfo`, the tables' accessors and collection conformances |
+| `__DATA.__data` | +14,760 | `dayInfo` 2,793, `dayEventStart` 5,588, `eventNameIDs` 6,064, plus alignment |
+| metadata and rounding | -4,724 | |
+| **total** | **+117,872** | |
+
+The core product accounts for the other +108,160 bytes: 50,916 of text, 30,312 of tables, and the
+rest metadata and runtime stubs.
+
+Two options, not implemented. The reviewer picks one or the fallback.
+
+### Option A: per-year patro modules
+
+Split the day tables and the name switch by BS year (2077 to 2084), and let a product link only the
+years it needs. A consumer that shows one year links about 1/8 of the names, tables and switch
+instead of all of them.
+
+- Expected saving for a one-year consumer: about 100 KB, or 7/8 of the patro delta
+  (0.875 × 117,872 = 103,138), which puts that consumer near 123 KB. A consumer that needs every
+  year saves nothing.
+- Risk: new products and a changed API, because `Patro.coverage` and `Patro.publicHolidays` span the
+  whole range; the release then carries several products at one tag (ADR-0005 allows it, but the
+  Swift Package Index page and the README grow).
+
+### Option B: a static name table instead of the 753-case switch
+
+Replace `PatroData.name`'s switch (36,024 bytes of text) with a 753-entry table of offsets into one
+packed string blob and a small lookup. Share the repeated English words the data shows (`Day` 179
+times, `Brata` 77, `International` 59) to shorten the blob.
+
+- Expected saving: about 29 KB of text (36,024 minus roughly 6 KB of table and 1 KB of lookup), and
+  about 6 KB of the 65,872-byte string section if the word sharing gives 10 %. The delta would fall
+  from 226,032 to about 191 KB, under the 200 KB target.
+- Risk: a `[String]` table is built on first access, one allocation that ADR-0002 §3 and B7's
+  zero-malloc rule forbid for patro lookups; a byte blob allocates a `String` on every read; a
+  statically initialised table needs `@section` and the OS 26 runtime, above the iOS 15 floor.
+  The table alone (29 KB) would leave 197 KB, only 3 KB under 200,000.
+
+### Fallback
+
+Keep the code and raise the ADR-0002 §7 `with-patro` target from 200 KB to 250 KB, with this
+breakdown as the reason. No code change.
+
 ## Checkpoint
 
 The agent stops here. The reviewer checks:
