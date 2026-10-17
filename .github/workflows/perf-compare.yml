@@ -21,6 +21,10 @@ on:
         required: true
         default: "5"
         type: string
+  # Temporary while S6 is on a branch: workflow_dispatch only resolves workflows on the default
+  # branch, where this file does not exist yet. Removed before the pull request is finished.
+  push:
+    branches: [feat/S6-perf]
 
 permissions:
   contents: read
@@ -86,7 +90,7 @@ jobs:
           ROUNDS: ${{ inputs.rounds }}
         run: |
           set -euo pipefail
-          FILTER="${FILTER:-^(B5|B6)$}"
+          FILTER="${FILTER:-^(B5|B5a|B6)$}"
           ROUNDS="${ROUNDS:-5}"
           for round in $(seq 1 "$ROUNDS"); do
             echo "round $round: base"
@@ -142,6 +146,7 @@ jobs:
           cat > results/b5.gdb <<'GDB'
           set pagination off
           set confirm off
+          set breakpoint pending on
           break malloc if $rdi == 96
           commands
             silent
