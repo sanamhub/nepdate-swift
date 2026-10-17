@@ -152,7 +152,7 @@ jobs:
           persist-credentials: false
       # Times are printed for the record; only the malloc thresholds are gated (ADR-0004).
       - name: Benchmarks (CI runner, not the reference machine)
-        run: swift package --package-path Benchmarks benchmark --no-progress
+        run: swift package --package-path Benchmarks benchmark --no-progress --target NepDateBenchmarks
       - name: Malloc thresholds
         run: >
           swift package --package-path Benchmarks benchmark thresholds check

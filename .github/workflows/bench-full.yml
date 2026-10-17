@@ -1,0 +1,111 @@
+name: bench-full
+
+# S5-02 and S5-03: the numbers in docs/benchmarks.md. package-benchmark supports Linux and macOS
+# only (BENCHMARK §1) and the reference machine is Windows, so the Swift numbers come from these
+# GitHub runners, never from the reference machine's column. The C# NepDate baseline runs on the
+# same runner, which is what the ratio uses.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  bench:
+    name: ${{ matrix.runner }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: 10.0.x
+      - name: Machine and toolchains
+        shell: bash
+        env:
+          RUNNER: ${{ matrix.runner }}
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          {
+            echo "runner=$RUNNER"
+            echo "date=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            uname -a
+            if [ "$RUNNER_OS" = "macOS" ]; then
+              sysctl -n machdep.cpu.brand_string
+              echo "cpus=$(sysctl -n hw.ncpu)"
+              sw_vers
+            else
+              lscpu | grep -E 'Model name|^CPU\(s\)|Thread'
+              nproc
+              free -h
+            fi
+            swift --version
+            xcodebuild -version 2>/dev/null || true
+            dotnet --version
+            dotnet --list-runtimes
+          } | tee results/machine.txt
+      - name: Swift benchmarks, our operations
+        shell: bash
+        run: |
+          set -euo pipefail
+          swift package --package-path Benchmarks --allow-writing-to-package-directory \
+            --allow-writing-to-directory "$GITHUB_WORKSPACE/results" \
+            benchmark --no-progress --target NepDateBenchmarks \
+            --format histogramPercentiles --path "$GITHUB_WORKSPACE/results/nepdate"
+      - name: Swift benchmarks, competitors
+        shell: bash
+        run: |
+          set -euo pipefail
+          swift package --package-path Benchmarks --allow-writing-to-package-directory \
+            --allow-writing-to-directory "$GITHUB_WORKSPACE/results" \
+            benchmark --no-progress --target CompetitorBenchmarks \
+            --format histogramPercentiles --path "$GITHUB_WORKSPACE/results/competitors"
+      - name: C# NepDate baseline on the same runner
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet run -c Release -f net10.0 --project Benchmarks/Vendor/dotnet-bench -- \
+            --filter "*" --artifacts "$GITHUB_WORKSPACE/results/csharp"
+          find results/csharp -name '*-report.csv' -print
+      - name: Ratio, Swift over C#
+        shell: bash
+        run: |
+          set -euo pipefail
+          csv="$(find results/csharp -name '*-report.csv' | head -n 1)"
+          python3 Benchmarks/scripts/ratio.py \
+            --swift-dir results/nepdate \
+            --csharp "$csv" \
+            --competitors-dir results/competitors | tee results/ratio.md
+          cat results/ratio.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Competitor agreement, a test and not a timing
+        shell: bash
+        run: swift test --package-path Benchmarks
+      - name: Stripped arm64 binary sizes (macOS and Linux)
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          set -euo pipefail
+          swift build -c release --package-path Examples
+          bin="$(swift build -c release --package-path Examples --show-bin-path)"
+          for name in baseline core-only with-patro; do strip "$bin/$name"; done
+          for name in baseline core-only with-patro; do
+            echo "$name $(stat -f%z "$bin/$name")" | tee -a results/size.txt
+          done
+          baseline="$(awk '$1=="baseline"{print $2}' results/size.txt)"
+          core="$(awk '$1=="core-only"{print $2}' results/size.txt)"
+          patro="$(awk '$1=="with-patro"{print $2}' results/size.txt)"
+          echo "core-only minus baseline: $((core - baseline)) bytes" | tee -a results/size.txt
+          echo "with-patro minus baseline: $((patro - baseline)) bytes" | tee -a results/size.txt
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: bench-${{ matrix.runner }}
+          path: results
+          if-no-files-found: warn

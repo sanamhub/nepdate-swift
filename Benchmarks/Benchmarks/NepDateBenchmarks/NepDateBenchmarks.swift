@@ -47,7 +47,7 @@ func binarySearchIndex(_ offsets: [Int], _ value: Int) -> Int? {
 
 let benchmarks: @Sendable () -> Void = {
   let configuration = Benchmark.Configuration(
-    metrics: [.wallClock, .mallocCountTotal, .instructions],
+    metrics: [.wallClock, .cpuTotal, .mallocCountTotal, .instructions],
     scalingFactor: .one,
     thresholds: [.mallocCountTotal: .init(absolute: [.p90: 0])])
 
