@@ -52,11 +52,14 @@ jobs:
           BASE_REF: ${{ inputs.base }}
         run: |
           set -euo pipefail
+          BASE_REF="${BASE_REF:-main}"
           git fetch --depth 1 origin "$BASE_REF"
           base_sha="$(git rev-parse FETCH_HEAD)"
           echo "head ref $GITHUB_REF $(git rev-parse HEAD)"
           echo "base ref $BASE_REF $base_sha"
-          git worktree add "$RUNNER_TEMP/base" "$base_sha"
+          # The directory name is the path dependency's package identity, so it must be the
+          # repository name (see CONTRIBUTING.md).
+          git worktree add "$RUNNER_TEMP/nepdate-swift" "$base_sha"
           echo "BASE_SHA=$base_sha" >> "$GITHUB_ENV"
       - name: Machine and toolchains
         shell: bash
@@ -87,15 +90,19 @@ jobs:
           ROUNDS: ${{ inputs.rounds }}
         run: |
           set -euo pipefail
+          FILTER="${FILTER:-^(B5|B6)$}"
+          ROUNDS="${ROUNDS:-5}"
           for round in $(seq 1 "$ROUNDS"); do
             echo "round $round: base"
-            swift package --package-path "$RUNNER_TEMP/base/Benchmarks" \
+            swift package --package-path "$RUNNER_TEMP/nepdate-swift/Benchmarks" \
               --allow-writing-to-package-directory \
+              --allow-writing-to-directory "$GITHUB_WORKSPACE/results" \
               benchmark --no-progress --target NepDateBenchmarks --filter "$FILTER" \
               --format histogramPercentiles --path "$GITHUB_WORKSPACE/results/base/$round"
             echo "round $round: head"
             swift package --package-path Benchmarks \
               --allow-writing-to-package-directory \
+              --allow-writing-to-directory "$GITHUB_WORKSPACE/results" \
               benchmark --no-progress --target NepDateBenchmarks --filter "$FILTER" \
               --format histogramPercentiles --path "$GITHUB_WORKSPACE/results/head/$round"
           done
@@ -121,7 +128,13 @@ jobs:
           else
             echo "valgrind memcheck failed, see the log"
           fi
-          tail -n 100 results/b5-memcheck.log || true
+          # The malloc sizes come from memcheck; the call stacks come from massif.
+          valgrind --tool=massif --massif-out-file=results/b5.massif --detailed-freq=1 \
+            --num-callers=24 "$bin" 200 > results/b5-massif-run.txt 2>&1 || true
+          ms_print results/b5.massif > results/b5-massif.txt || true
+          grep -E '^--[0-9]+--' results/b5-memcheck.log | sed 's/^--[0-9]*-- //' \
+            | sort | uniq -c | sort -rn | head -n 10 || true
+          head -n 120 results/b5-massif.txt || true
       - name: Size breakdown (macOS)
         if: runner.os == 'macOS'
         shell: bash
