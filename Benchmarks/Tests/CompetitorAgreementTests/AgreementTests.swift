@@ -55,7 +55,7 @@ struct SharedDataDates {
       for m in 0..<(month - 1) { total += lengths[year - 1901][m] }
       return total + day - 1
     }
-    func bs(from serial: Int) -> (year: Int, month: Int, day: Int)? {
+    func bsDate(from serial: Int) -> (year: Int, month: Int, day: Int)? {
       var rest = serial
       var year = 1901
       while year <= 2199, rest >= yearLength(year) {
@@ -82,7 +82,7 @@ struct SharedDataDates {
     var serials: [Int] = []
     for index in 0..<Self.count {
       let value = first + index * step
-      guard let date = bs(from: value) else { throw SharedDataError.serialOutsideRange }
+      guard let date = bsDate(from: value) else { throw SharedDataError.serialOutsideRange }
       bs.append(date)
       ad.append(civilFromDays(epoch + value))
       serials.append(value)
