@@ -8,6 +8,8 @@ let package = Package(
   targets: [
     .executableTarget(name: "codegen"),
     .executableTarget(name: "coverage-check"),
+    .executableTarget(name: "readme-check"),
+    .executableTarget(name: "docs-check"),
   ],
   swiftLanguageModes: [.v6]
 )
