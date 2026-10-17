@@ -48,21 +48,17 @@ def sections(path):
 
 
 def symbol_sizes(path):
-    """Text symbol sizes from consecutive addresses in an unstripped binary."""
-    entries = []
+    """Text symbol sizes from consecutive text addresses in an unstripped binary."""
+    text = []
     for line in run("nm", "-n", "-U", path).splitlines():
         match = SYMBOL.match(line)
-        if match:
-            entries.append((int(match.group(1), 16), match.group(2), match.group(3).strip()))
-    entries.sort()
+        if match and match.group(2) in ("T", "t"):
+            text.append((int(match.group(1), 16), match.group(3).strip()))
+    text.sort()
     sizes = {}
-    for index, (address, kind, name) in enumerate(entries):
-        if kind not in ("T", "t"):
-            continue
-        if index + 1 < len(entries):
-            following = entries[index + 1][0]
-            if following > address:
-                sizes[name] = following - address
+    for (address, name), (following, _) in zip(text, text[1:]):
+        if following > address:
+            sizes[name] = following - address
     return sizes
 
 
