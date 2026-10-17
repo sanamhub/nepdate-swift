@@ -10,11 +10,13 @@ private enum Outcome: Equatable {
   case error(NepDateError)
 }
 
-private func outcome(_ body: () throws(NepDateError) -> NepaliDate) -> Outcome {
+private func outcome(_ body: () throws -> NepaliDate) -> Outcome {
   do {
     return .date(try body())
-  } catch {
+  } catch let error as NepDateError {
     return .error(error)
+  } catch {
+    fatalError("the strict parser threw a non-NepDateError: \(error)")
   }
 }
 
@@ -38,7 +40,7 @@ private func canonicalShape(_ text: String) -> Bool {
 public func fuzz(_ data: UnsafePointer<UInt8>, _ size: Int) -> CInt {
   let text = String(decoding: UnsafeBufferPointer(start: data, count: size), as: UTF8.self)
   let fast = outcome { try NepaliDate.parse(text) }
-  let slow = outcome { try NepaliDate.parseSlow(text) }
+  let slow = outcome { try NepaliDate.parseSlow(text.utf8) }
   if fast != slow {
     fatalError("parse(\(text)) = \(fast), parseSlow = \(slow)")
   }

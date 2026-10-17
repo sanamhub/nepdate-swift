@@ -13,11 +13,15 @@ struct ParseFastPathTests {
     case error(NepDateError)
   }
 
-  static func outcome(_ body: () throws(NepDateError) -> NepaliDate) -> Outcome {
+  /// The closure is untyped `throws` because a literal's thrown type is not inferred from a
+  /// typed-throws parameter (see `expectError`); the parser only throws `NepDateError`.
+  static func outcome(_ body: () throws -> NepaliDate) -> Outcome {
     do {
       return .date(try body())
-    } catch {
+    } catch let error as NepDateError {
       return .error(error)
+    } catch {
+      fatalError("the strict parser threw a non-NepDateError: \(error)")
     }
   }
 
@@ -39,7 +43,7 @@ struct ParseFastPathTests {
         let text = Self.text(
           year: date.year, month: date.month, day: date.day, separator: separator)
         let fast = Self.outcome { try NepaliDate.parse(text) }
-        let slow = Self.outcome { try NepaliDate.parseSlow(text) }
+        let slow = Self.outcome { try NepaliDate.parseSlow(text.utf8) }
         if fast != slow {
           log.record(Int(serial), "\(text): fast \(fast), loop \(slow)")
         }
@@ -73,7 +77,7 @@ struct ParseFastPathTests {
     ]
     for text in texts {
       let fast = Self.outcome { try NepaliDate.parse(text) }
-      let slow = Self.outcome { try NepaliDate.parseSlow(text) }
+      let slow = Self.outcome { try NepaliDate.parseSlow(text.utf8) }
       #expect(fast == slow, "\(text): fast \(fast), loop \(slow)")
     }
   }
