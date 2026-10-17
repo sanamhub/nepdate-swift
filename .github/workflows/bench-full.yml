@@ -6,6 +6,10 @@ name: bench-full
 # same runner, which is what the ratio uses.
 on:
   workflow_dispatch:
+  # Temporary: lets the agent run this before the workflow exists on main (GitHub resolves
+  # workflow_dispatch only on the default branch). Removed before the pull request is finished.
+  push:
+    branches: [feat/S5-release]
 
 permissions:
   contents: read
