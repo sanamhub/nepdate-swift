@@ -14,13 +14,17 @@ on:
       filter:
         description: package-benchmark name filter
         required: true
-        default: "^B6$"
+        default: "^(B5|B6)$"
         type: string
       rounds:
         description: Interleaved rounds per side
         required: true
         default: "5"
         type: string
+  # Temporary while S6 is on a branch: workflow_dispatch only resolves workflows on the default
+  # branch, where this file does not exist yet. Removed before the pull request is finished.
+  push:
+    branches: [feat/S6-perf]
 
 permissions:
   contents: read
@@ -101,6 +105,34 @@ jobs:
           set -euo pipefail
           dotnet run -c Release -f net10.0 --project Benchmarks/Vendor/dotnet-bench -- \
             --filter "*" --artifacts "$GITHUB_WORKSPACE/results/csharp"
+      - name: B5 allocation profile (Linux)
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          set -uo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq valgrind
+          swift build -c release --package-path Benchmarks --product b5-profile
+          bin="$(swift build -c release --package-path Benchmarks --show-bin-path)/b5-profile"
+          "$bin" 10 > results/b5-warmup.txt
+          if valgrind --tool=memcheck --trace-malloc=yes --num-callers=24 \
+            --log-file=results/b5-memcheck.log "$bin" 1000 > results/b5-run.txt 2>&1; then
+            echo "valgrind memcheck ok"
+          else
+            echo "valgrind memcheck failed, see the log"
+          fi
+          tail -n 100 results/b5-memcheck.log || true
+      - name: Size breakdown (macOS)
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          set -euo pipefail
+          swift build -c release --package-path Examples
+          bin="$(swift build -c release --package-path Examples --show-bin-path)"
+          for name in baseline core-only with-patro; do strip "$bin/$name"; done
+          python3 Benchmarks/scripts/size-breakdown.py \
+            --baseline "$bin/baseline" --core-only "$bin/core-only" --with-patro "$bin/with-patro" \
+            | tee results/size-breakdown.md
       - name: Aggregate the rounds
         shell: bash
         run: |
