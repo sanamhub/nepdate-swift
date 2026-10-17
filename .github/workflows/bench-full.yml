@@ -78,20 +78,7 @@ jobs:
           dotnet run -c Release -f net10.0 --project Benchmarks/Vendor/dotnet-bench -- \
             --filter "*" --artifacts "$GITHUB_WORKSPACE/results/csharp"
           find results/csharp -name '*-report.csv' -print
-      - name: Ratio, Swift over C#
-        shell: bash
-        run: |
-          set -euo pipefail
-          csv="$(find results/csharp -name '*-report.csv' | head -n 1)"
-          python3 Benchmarks/scripts/ratio.py \
-            --swift-dir results/nepdate \
-            --csharp "$csv" \
-            --competitors-dir results/competitors | tee results/ratio.md
-          cat results/ratio.md >> "$GITHUB_STEP_SUMMARY"
-      - name: Competitor agreement, a test and not a timing
-        shell: bash
-        run: swift test --package-path Benchmarks
-      - name: Stripped arm64 binary sizes (macOS and Linux)
+      - name: Stripped arm64 binary sizes (macOS)
         if: runner.os == 'macOS'
         shell: bash
         run: |
@@ -107,6 +94,20 @@ jobs:
           patro="$(awk '$1=="with-patro"{print $2}' results/size.txt)"
           echo "core-only minus baseline: $((core - baseline)) bytes" | tee -a results/size.txt
           echo "with-patro minus baseline: $((patro - baseline)) bytes" | tee -a results/size.txt
+      - name: Ratio, Swift over C#
+        shell: bash
+        run: |
+          set -euo pipefail
+          csv="$(find results/csharp -name '*-report.csv' | head -n 1)"
+          python3 Benchmarks/scripts/ratio.py \
+            --swift-dir results/nepdate \
+            --csharp "$csv" \
+            --competitors-dir results/competitors | tee results/ratio.md
+          cat results/ratio.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Competitor agreement, a test and not a timing
+        if: always()
+        shell: bash
+        run: swift test --package-path Benchmarks
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:

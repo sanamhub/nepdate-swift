@@ -28,8 +28,11 @@ def read_percentiles(path):
     unit = "ns"
     with open(path, encoding="utf-8") as stream:
         header = stream.readline().rstrip("\n").split("\t")
-        if len(header) == 2 and header[1].split():
-            unit = header[1].split()[-1]
+        if len(header) == 2:
+            # For example "Time (wall clock) (ns) *"; the unit is the last parenthesised group.
+            groups = re.findall(r"\(([^()]*)\)", header[1])
+            if groups:
+                unit = groups[-1].strip()
         for line in stream:
             fields = line.rstrip("\n").split("\t")
             if len(fields) != 2:
@@ -65,19 +68,28 @@ def swift_results(directory):
     return results
 
 
+def number_with_unit(text):
+    """BenchmarkDotNet writes values with their unit in the cell, for example '3,698.11 ns'."""
+    match = re.match(
+        r"^\s*([0-9]+(?:\.[0-9]+)?)\s*([A-Za-z\u00b5\u03bc]+)?\s*$", (text or "").replace(",", ""))
+    if not match:
+        return None
+    return to_ns(float(match.group(1)), (match.group(2) or "ns").strip())
+
+
 def csharp_results(path):
     """{ID: mean ns/op} from the BenchmarkDotNet CSV."""
     results = {}
     with open(path, newline="", encoding="utf-8-sig") as stream:
         for row in csv.DictReader(stream):
-            match = re.match(r"^(B[0-9]+)\b", row.get("Method", ""))
+            # BenchmarkDotNet writes the Method cell as 'B1 BS to AD', quotes included.
+            method = (row.get("Method") or "").strip().strip("'\"")
+            match = re.match(r"^(B[0-9]+)\b", method)
             if not match:
                 continue
-            unit = (row.get("Units") or row.get("Unit") or "ns").strip()
-            try:
-                results[match.group(1)] = to_ns(float(row["Mean"]), unit)
-            except (KeyError, ValueError):
-                continue
+            mean = number_with_unit(row.get("Mean"))
+            if mean is not None:
+                results[match.group(1)] = mean
     return results
 
 
