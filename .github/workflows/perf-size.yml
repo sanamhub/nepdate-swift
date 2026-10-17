@@ -19,20 +19,35 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          fetch-depth: 0
           persist-credentials: false
+      - name: Base worktree
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --depth 1 origin "${BASE_REF:-main}"
+          base_sha="$(git rev-parse FETCH_HEAD)"
+          echo "base $base_sha"
+          echo "head $(git rev-parse HEAD)"
+          git worktree add "$RUNNER_TEMP/nepdate-swift" "$base_sha"
       - name: Build, strip and measure
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p results/unstripped
+          mkdir -p results/unstripped results/base
+          # The base ref, for the old-against-new size of the parser change.
+          swift build -c release --package-path "$RUNNER_TEMP/nepdate-swift/Examples"
+          base_bin="$(swift build -c release --package-path "$RUNNER_TEMP/nepdate-swift/Examples" --show-bin-path)"
+          for name in baseline core-only with-patro; do
+            strip "$base_bin/$name"
+            echo "base $name $(stat -f%z "$base_bin/$name")" | tee -a results/base-sizes.txt
+          done
           swift build -c release --package-path Examples
           bin="$(swift build -c release --package-path Examples --show-bin-path)"
           for name in baseline core-only with-patro; do
             cp "$bin/$name" "results/unstripped/$name"
             strip "$bin/$name"
-          done
-          for name in baseline core-only with-patro; do
-            echo "$name $(stat -f%z "$bin/$name")" | tee -a results/sizes.txt
+            echo "head $name $(stat -f%z "$bin/$name")" | tee -a results/base-sizes.txt
             size -m "$bin/$name" > "results/size-$name.txt" 2>&1 || true
             nm -n -U "results/unstripped/$name" > "results/nm-$name.txt" 2>&1 || true
           done
