@@ -48,7 +48,7 @@ public struct NepaliDate: Sendable, BitwiseCopyable, Hashable, Comparable, Codab
     public func appendLong(to output: inout String, weekday: Bool = false, year: Bool = true,
                            pad: Bool = true, lang: Lang = .english)
     public func appendFormat(_ pattern: String, to output: inout String, lang: Lang = .english)
-    // Codable: single string "YYYY-MM-DD" (D-11); decoding uses the strict parser.
+    // Codable: single string "YYYY-MM-DD" (D-11); decoding accepts exactly the encoded form.
 }
 
 #if canImport(Foundation)
@@ -120,7 +120,7 @@ public struct Named: Sendable, Hashable {                     // 2 bytes: an id 
     public func name(_ lang: Lang = .english) -> String
 }
 extension NepaliDate { public var calendarInfo: CalendarInfo { get } }    // never fails
-public enum Patro {
+public enum Patro: Sendable {
     public static var coverage: NepaliDateRange { get }
     public static var publicHolidays: some Sequence<NepaliDate> { get }  // ascending
 }

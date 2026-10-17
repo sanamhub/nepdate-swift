@@ -20,6 +20,7 @@ let package = Package(
       dependencies: [
         "BenchmarkInputs",
         .product(name: "NepDate", package: "nepdate-swift"),
+        .product(name: "NepDatePatro", package: "nepdate-swift"),
         .product(name: "Benchmark", package: "benchmark"),
       ],
       path: "Benchmarks/NepDateBenchmarks",

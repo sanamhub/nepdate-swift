@@ -11,6 +11,11 @@ enum Paths {
   static let calendarOutput = "Sources/NepDate/Calendar.generated.swift"
   static let parsingSpec = "shared/spec/PARSING.md"
   static let wordsOutput = "Sources/NepDate/LenientWords.generated.swift"
+  static let patroDirectory = "shared/data/patro"
+  static let patroOutput = "Sources/NepDatePatro/Patro.generated.swift"
+  /// Serials of BS 2077-01-01 and 2084-08-20, the days PATRO §2 says the data covers.
+  static let coverageFirst = 64285
+  static let coverageLast = 67077
   /// Era markers and filler words that lenient parsing drops (PARSING §2).
   static let droppedWords = [
     "bs", "b.s.", "b.s", "vs", "v.s.", "v.s", "बि.सं.", "वि.सं.", "बि.सं", "वि.सं", "गते", "मिति",
@@ -122,12 +127,18 @@ func monthIndexOfSerial(_ monthStart: [Int]) -> [Int] {
   return result
 }
 
-func calendarSource(_ calendar: CalendarInput, header: String) -> String {
-  let years = calendar.years
+/// Serial of the first day of every month, plus the number of days in the range.
+func monthStarts(_ calendar: CalendarInput) -> [Int] {
   var monthStart = [0]
-  for entry in years {
+  for entry in calendar.years {
     for length in entry.lengths { monthStart.append(monthStart[monthStart.count - 1] + length) }
   }
+  return monthStart
+}
+
+func calendarSource(_ calendar: CalendarInput, header: String) -> String {
+  let years = calendar.years
+  let monthStart = monthStarts(calendar)
   let totalDays = monthStart[monthStart.count - 1]
 
   // ADR-0002 §2: entry b is the month of serial b * 16. init(serial:) steps forward at most once,
@@ -259,6 +270,186 @@ func wordsSource(_ months: [(word: String, month: Int)], header: String) -> Stri
   return out
 }
 
+struct PatroFile: Decodable {
+  let days: [String: Day]
+
+  struct Day: Decodable {
+    let tithi: Pair?
+    let holiday: Bool?
+    let events: [Pair]?
+  }
+
+  struct Pair: Decodable, Hashable {
+    let np: String
+    let en: String
+  }
+}
+
+/// Serial of a `YYYY-MM-DD` BS day key, or nil when it is not a valid date.
+func serialOfKey(_ key: String, monthStart: [Int]) -> Int? {
+  let parts = key.split(separator: "-", omittingEmptySubsequences: false)
+  guard parts.count == 3, parts.allSatisfy({ !$0.isEmpty && $0.allSatisfy(\.isASCII) }),
+    let year = Int(parts[0]), let month = Int(parts[1]), let day = Int(parts[2]),
+    (1901...2199).contains(year), (1...12).contains(month)
+  else { return nil }
+  let index = (year - 1901) * 12 + month - 1
+  guard day >= 1, day <= monthStart[index + 1] - monthStart[index] else { return nil }
+  return monthStart[index] + day - 1
+}
+
+/// A Swift string literal for `text`; the generator rejects control characters.
+func swiftLiteral(_ text: String) -> String {
+  for scalar in text.unicodeScalars where scalar.value < 0x20 || scalar.value == 0x7F {
+    fail("name \(text.debugDescription) has a control character")
+  }
+  let escaped = text.replacingOccurrences(of: "\\", with: "\\\\")
+    .replacingOccurrences(of: "\"", with: "\\\"")
+  return "\"\(escaped)\""
+}
+
+/// Rows of up to 16 numbers, each indented four spaces and ending with a comma.
+func numberRows<C: Collection>(_ values: C) -> String where C.Element == Int {
+  let all = Array(values)
+  var out = ""
+  var index = 0
+  while index < all.count {
+    out += "    " + all[index..<min(index + 16, all.count)].map(String.init).joined(separator: ", ")
+    out += ",\n"
+    index += 16
+  }
+  return out
+}
+
+/// The patro tables of ADR-0002 §3 from `shared/data/patro/*.json` (S4-01).
+func patroSource(_ calendar: CalendarInput, header: String) -> String {
+  let monthStart = monthStarts(calendar)
+  let first = Paths.coverageFirst
+  let last = Paths.coverageLast
+  let count = last - first + 1
+
+  let names = (try? FileManager.default.contentsOfDirectory(atPath: Paths.patroDirectory)) ?? []
+  let files = names.compactMap { name -> (year: Int, name: String)? in
+    guard name.hasSuffix(".json"), let year = Int(name.dropLast(5)) else { return nil }
+    return (year, name)
+  }.sorted { $0.year < $1.year }
+  guard !files.isEmpty else { fail("no year files in \(Paths.patroDirectory)") }
+
+  var days: [(serial: Int, day: PatroFile.Day)] = []
+  var seen = Set<Int>()
+  for file in files {
+    let path = "\(Paths.patroDirectory)/\(file.name)"
+    let decoded: PatroFile
+    do {
+      decoded = try JSONDecoder().decode(
+        PatroFile.self, from: Data(contentsOf: URL(fileURLWithPath: path)))
+    } catch {
+      fail("cannot read \(path): \(error)")
+    }
+    for (key, day) in decoded.days {
+      guard let serial = serialOfKey(key, monthStart: monthStart) else {
+        fail("\(path): day key \(key) is not a valid BS date")
+      }
+      guard serial >= first, serial <= last else { fail("\(path): day \(key) is outside coverage") }
+      guard seen.insert(serial).inserted else { fail("\(path): day \(key) appears twice") }
+      days.append((serial, day))
+    }
+  }
+  // JSON object order is not kept by the decoder, so order the days by serial.
+  days.sort { $0.serial < $1.serial }
+
+  var nameIDs: [PatroFile.Pair: Int] = [:]
+  var nameOrder: [PatroFile.Pair] = []
+  func id(of pair: PatroFile.Pair) -> Int {
+    if let known = nameIDs[pair] { return known }
+    nameIDs[pair] = nameOrder.count
+    nameOrder.append(pair)
+    return nameOrder.count - 1
+  }
+  // Tithi names first, so they take ids 0 to 31.
+  for entry in days { if let tithi = entry.day.tithi { _ = id(of: tithi) } }
+  let tithiCount = nameOrder.count
+  guard tithiCount <= 63 else { fail("\(tithiCount) tithi names, at most 63 fit in 6 bits") }
+
+  var dayInfo = [Int](repeating: 0, count: count)
+  var eventsOfDay = [[Int]](repeating: [], count: count)
+  for entry in days {
+    let k = entry.serial - first
+    if let tithi = entry.day.tithi { dayInfo[k] |= id(of: tithi) + 1 }
+    if entry.day.holiday == true { dayInfo[k] |= 0x80 }
+    eventsOfDay[k] = (entry.day.events ?? []).map { id(of: $0) }
+  }
+  var dayEventStart = [0]
+  var eventNameIDs: [Int] = []
+  for k in 0..<count {
+    eventNameIDs += eventsOfDay[k]
+    dayEventStart.append(eventNameIDs.count)
+  }
+  guard eventNameIDs.count <= Int(UInt16.max) else {
+    fail("\(eventNameIDs.count) event entries, at most 65,535 fit in UInt16")
+  }
+
+  // Day offsets where a BS month starts, for the comments in dayInfo.
+  var monthLabels: [(offset: Int, label: String)] = []
+  for i in 0..<(monthStart.count - 1) where monthStart[i] >= first && monthStart[i] <= last {
+    let month = i % 12 + 1
+    let label = "\(1901 + i / 12)-\(month < 10 ? "0" : "")\(month)-01"
+    monthLabels.append((monthStart[i] - first, label))
+  }
+
+  var out = header
+  out += """
+    /// Patro tables from `shared/data/patro/` (ADR-0002 §3). Day `k` is serial `coverageFirst + k`.
+    @usableFromInline
+    enum PatroData {
+      /// Serial of BS 2077-01-01, the first day with patro data.
+      @usableFromInline static let coverageFirst: Int32 = \(first)
+      /// Serial of BS 2084-08-20, the last day with patro data.
+      @usableFromInline static let coverageLast: Int32 = \(last)
+
+      /// One entry per day: bits 0 to 5 are the tithi name id + 1 (0: no tithi), bit 7 is set on a
+      /// public holiday.
+      @usableFromInline static let dayInfo: [UInt8] = [
+
+    """
+  for (index, month) in monthLabels.enumerated() {
+    let end = index + 1 < monthLabels.count ? monthLabels[index + 1].offset : count
+    out += "    // \(month.label)\n"
+    out += numberRows(dayInfo[month.offset..<end])
+  }
+  out += "  ]\n\n"
+  out += """
+      /// The events of day `k` are `eventNameIDs[dayEventStart[k] ..< dayEventStart[k + 1]]`.
+      @usableFromInline static let dayEventStart: [UInt16] = [
+
+    """
+  out += numberRows(dayEventStart)
+  out += "  ]\n\n"
+  out += """
+      /// Name id of each event, days in date order, events in file order.
+      @usableFromInline static let eventNameIDs: [UInt16] = [
+
+    """
+  out += numberRows(eventNameIDs)
+  out += "  ]\n\n"
+  out += """
+      /// The Nepali and English text of name `id`. Ids 0 to \(tithiCount - 1) are the tithi names.
+      @usableFromInline static func name(_ id: UInt16) -> (nepali: String, english: String) {
+        switch id {
+
+    """
+  for (index, pair) in nameOrder.enumerated() {
+    out += "    case \(index): return (\(swiftLiteral(pair.np)), \(swiftLiteral(pair.en)))\n"
+  }
+  out += "    default: return (\"\", \"\")\n    }\n  }\n}\n"
+
+  let stringBytes = nameOrder.reduce(0) { $0 + $1.np.utf8.count + $1.en.utf8.count }
+  print(
+    "codegen: dayInfo \(count) bytes, dayEventStart \(2 * dayEventStart.count) bytes, "
+      + "eventNameIDs \(2 * eventNameIDs.count) bytes, \(nameOrder.count) names "
+      + "(\(stringBytes) bytes of UTF-8)")
+  return out
+}
+
 /// Prints the first line where `expected` and the file on disk differ. Returns true when equal.
 func matchesDisk(_ expected: String, path: String) -> Bool {
   guard let disk = FileManager.default.contents(atPath: path) else {
@@ -291,9 +482,11 @@ guard FileManager.default.fileExists(atPath: "shared/VERSION") else {
   exit(1)
 }
 
+let calendar = loadCalendar()
 let outputs = [
-  (Paths.calendarOutput, calendarSource(loadCalendar(), header: header)),
+  (Paths.calendarOutput, calendarSource(calendar, header: header)),
   (Paths.wordsOutput, wordsSource(loadMonthWords(), header: header)),
+  (Paths.patroOutput, patroSource(calendar, header: header)),
 ]
 
 if check {

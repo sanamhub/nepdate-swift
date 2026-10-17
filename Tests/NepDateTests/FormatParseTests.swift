@@ -27,6 +27,20 @@ func parseResult(_ body: () throws(NepDateError) -> NepaliDate) -> String {
   }
 }
 
+/// Whether a pattern uses the short-month token: a run of exactly three `M`s, not four or more.
+func hasShortMonthToken(_ pattern: String) -> Bool {
+  var run = 0
+  for byte in pattern.utf8 {
+    if byte == 0x4D {  // M
+      run += 1
+    } else {
+      if run == 3 { return true }
+      run = 0
+    }
+  }
+  return run == 3
+}
+
 @Suite("Formatting")
 struct FormattingTests {
   @Test("S3-01 AC1: month and weekday names")
@@ -122,25 +136,29 @@ struct FormattingTests {
     #expect(file.rows.count == 451)
     var log = FailureLog()
     var checked = 0
-    var skipped = 0
+    var d04 = 0
     for (line, fields) in file.rows {
       guard fields.count == 3, let date = try goldenDate(fields[0]) else {
         log.record(line, "malformed")
         continue
       }
       let pattern = String(fields[1])
+      let got = date.format(pattern)
       // D-04: C# abbreviates Ashad and Ashoj both as "Ash"; NepDate writes "Asa" and "Aso".
-      let shortMonth = pattern.contains("MMM") && !pattern.contains("MMMM")
-      if shortMonth && (date.month == 3 || date.month == 6) {
-        skipped += 1
+      if hasShortMonthToken(pattern) && (date.month == 3 || date.month == 6) {
+        d04 += 1
+        let expected = fields[2].replacingOccurrences(
+          of: "Ash", with: date.month == 3 ? "Asa" : "Aso")
+        if got != expected {
+          log.record(line, "\(pattern) gave \(got), want \(expected) (D-04)")
+        }
         continue
       }
-      let got = date.format(pattern)
       if got != fields[2] { log.record(line, "\(pattern) gave \(got)") }
       checked += 1
     }
-    #expect(skipped >= 1)
-    #expect(checked + skipped == 451)
+    #expect(d04 == 7)
+    #expect(checked + d04 == 451)
     #expect(log.count == 0, "\(log.summary)")
   }
 
@@ -243,6 +261,18 @@ struct ParsingTests {
       Issue.record("expected dataCorrupted, got \(error)")
     }
     #expect(corrupted)
+    // D-11: the interchange form is YYYY-MM-DD, so a slash-separated date is rejected even though
+    // parse(_:) accepts it.
+    for text in ["2081/04/15", "2081-4-15", "२०८१-०४-१५"] {
+      do {
+        _ = try JSONDecoder().decode(NepaliDate.self, from: Data("\"\(text)\"".utf8))
+        Issue.record("expected \(text) to be rejected")
+      } catch DecodingError.dataCorrupted {
+        // Expected.
+      } catch {
+        Issue.record("expected dataCorrupted for \(text), got \(error)")
+      }
+    }
   }
 
   @Test("S3-06 AC3: description round-trips through init?(_:) for every golden date")

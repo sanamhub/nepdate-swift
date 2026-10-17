@@ -39,7 +39,15 @@ gate_codegen() {
 }
 
 gate_patro_free() {
-  echo "skipped (the Examples package arrives in S4)"
+  run swift build -c release --package-path Examples
+  if ! grep -a -q 'World Day Against Human Trafficking' Examples/.build/release/with-patro; then
+    echo "with-patro binary does not contain the patro string"
+    return 1
+  fi
+  if grep -a -q 'World Day Against Human Trafficking' Examples/.build/release/core-only; then
+    echo "core-only binary contains the patro string"
+    return 1
+  fi
 }
 
 gate_api() {

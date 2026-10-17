@@ -19,9 +19,10 @@ public struct NepaliDateRange: RandomAccessCollection, Sendable, Hashable {
     self.init(unchecked: start, end)
   }
 
-  /// Stores bounds the caller knows are in order.
+  /// Stores bounds the caller knows are in order. `package` so `NepDatePatro` can return its
+  /// coverage without an optional (S4-02).
   @inlinable
-  init(unchecked start: NepaliDate, _ end: NepaliDate) {
+  package init(unchecked start: NepaliDate, _ end: NepaliDate) {
     lowerBound = start
     upperBound = end
   }
