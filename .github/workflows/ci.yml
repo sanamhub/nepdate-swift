@@ -4,6 +4,8 @@ on:
   pull_request:
   push:
     branches: [main]
+  # release.yml runs the same jobs on a tag, so a tag cannot release without the gates.
+  workflow_call:
 
 permissions:
   contents: read
