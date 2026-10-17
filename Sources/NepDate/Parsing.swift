@@ -82,7 +82,8 @@ extension NepaliDate {
   /// Returns `nil` when the shape does not match, and `parse` then runs `parseSlow`. The fields go
   /// through ``init(year:month:day:)``, so the range, month and day checks and their error order
   /// are the ones the loop uses.
-  @inlinable
+  @usableFromInline
+  @inline(never)
   static func parseCanonical<Bytes: Collection>(
     _ utf8: Bytes
   ) throws(NepDateError) -> NepaliDate? where Bytes.Element == UInt8 {
@@ -136,7 +137,8 @@ extension NepaliDate {
 
   /// The general strict scanner: any strict separator, one to four digits per group, ASCII or
   /// Devanagari digits. It is the reference the fast path is tested against.
-  @inlinable
+  @usableFromInline
+  @inline(never)
   static func parseSlow<Bytes: Collection>(
     _ utf8: Bytes
   ) throws(NepDateError) -> NepaliDate where Bytes.Element == UInt8 {
