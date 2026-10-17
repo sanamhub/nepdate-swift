@@ -157,6 +157,12 @@ product adds the dense day tables, the event tables and the 753-case name `switc
 literals, which is more than ADR-0002's estimate of 120 to 170 KB. No optimisation was attempted
 after the measurement; the number is reported as measured.
 
+The parser fast path changes these numbers on the same runner: `core-only` goes from 142,552 to
+159,480, so its delta becomes 108,160 and misses the 100 KB target by 8,160; `with-patro` goes from
+276,952 to 277,352, a delta of 226,032. The parser is dead-stripped from `with-patro`, so almost all
+of its 16,928 bytes reach only `core-only`. The section and symbol breakdown, and two costed options
+for the patro bytes, are in [`plan/S6-perf.md`](plan/S6-perf.md).
+
 ## Targets
 
 ADR-0002 §7: B1, B2 and B7 within 1.5 times C# on the same runner, zero mallocs for B1 to B4, B5a,

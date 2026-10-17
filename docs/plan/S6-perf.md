@@ -77,9 +77,9 @@ AC3: any change keeps all 1,018 golden rows and the 451 `format-pattern.tsv` row
 ### S6-04 Size breakdown and two options
 
 - Add `Benchmarks/scripts/size-breakdown.py` and a macOS step that runs `size -m`, `otool -l` and
-  `nm -S` on the stripped `core-only` and `with-patro` binaries, then attributes the 225,632-byte
-  delta to sections and to symbol groups (patro tables, the name `switch` and its literals, Swift
-  metadata, the rest).
+  `nm` on the stripped `core-only` and `with-patro` binaries, then attributes the measured delta to
+  sections and to symbol groups (patro tables, the name `switch` and its literals, Swift metadata,
+  the rest).
 - Add the measured options and their expected savings to this file before any implementation.
 
 AC1: the section table accounts for the delta, with any unexplained remainder stated.
@@ -130,6 +130,20 @@ The patro product alone, against `core-only`, is +117,872 bytes:
 The core product accounts for the other +108,160 bytes: 50,916 of text, 30,312 of tables, and the
 rest metadata and runtime stubs.
 
+The parser fast path moves these numbers, measured base against head in one `perf-size` run
+(39071859134):
+
+| Binary | Base (main c061506) | Head (this change) | Delta |
+|---|---:|---:|---:|
+| core-only, stripped | 142,552 | 159,480 | +16,928 |
+| with-patro, stripped | 276,952 | 277,352 | +400 |
+
+The parser is dead-stripped from `with-patro`, whose program never parses, so only 400 of its bytes
+reach that binary. Every byte reaches `core-only`, which parses a date: its delta goes from 91,232
+(under the 100 KB target) to 108,160, over it by 8,160. The with-patro delta goes from 225,632 to
+226,032, over its 200 KB target by 26,032. The code growth is the parser's generic specialisations;
+an out-of-line variant was tried and did not shrink the binary (see the results below).
+
 Two options, not implemented. The reviewer picks one or the fallback.
 
 ### Option A: per-year patro modules
@@ -164,6 +178,56 @@ times, `Brata` 77, `International` 59) to shorten the blob.
 Keep the code and raise the ADR-0002 §7 `with-patro` target from 200 KB to 250 KB, with this
 breakdown as the reason. No code change.
 
+## Results (2026-10-18)
+
+### S6-01 Interleaved harness
+
+`perf-compare.yml`, run 39070430969. Base `main` c061506, head 4ea8f96, five rounds per side,
+alternating base and head, on ubuntu-latest and macos-latest, with the C# baseline measured on each
+runner in the same job. The raw per-round files are in the run artifacts.
+
+### S6-02 B6 canonical fast path
+
+| Runner and load | old p50 | new p50 | change | old p90 | new p90 | C# same runner | old/C# | new/C# |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| ubuntu-latest, AMD EPYC 7763, 4 vCPU, shared | 63.3 | 31.6 | -50.0 % | 63.5 | 32.1 | 28.2 | 2.25 | 1.12 |
+| macos-latest, Apple M1 virtual, 3 vCPU, shared | 56.6 | 32.5 | -42.5 % | 72.9 | 39.1 | 24.6 | 2.30 | 1.32 |
+
+Both sides allocate 0. The 30 % landing threshold is met on both runners, so the change stays.
+
+The exhaustive differential covers 109,212 dates times 8 separators (873,696 rows, 764,484 of them
+canonical) and matches `parseSlow` on date and error every time. `FuzzParseCanonical` ran 60 seconds
+with the other three targets and found nothing. The negative control broke the year-hundreds digit
+check: the exhaustive test reported 253,127 declined canonical rows (first `1901-01-01`) and the
+fuzz target failed on its `9999/99/99` seed.
+
+An out-of-line variant (`@inline(never)` on the two helpers) was measured to cut the code growth. It
+did not shrink the binary (159,592 against 159,480) and made B6 63.1 to 234.4 ns/op, so it was
+reverted.
+
+### S6-03 B5 allocation
+
+The one malloc is the returned `String` buffer. Valgrind memcheck over 1,000 calls of
+`long(weekday: true, lang: .nepali)` recorded exactly 1,000 mallocs of 96 bytes; the text is 59
+UTF-8 bytes. Massif's allocation tree names `_allocateStringStorage` in libswiftCore as the
+allocator; the only caller in the formatter is `String.reserveCapacity` in `long`, after the
+byte-counting pass.
+
+Cost: B5 against B5a in run 39070430969, 93.7 ns/op on both runners (531.2 against 437.5 on ubuntu,
+390.6 against 296.9 on macOS). The gap covers the allocation, the first pass that counts bytes and
+the return; the malloc's own cost is not separable from those.
+
+No code change. The allocation is the String the API returns, so removing it means changing the
+return type or using a caller buffer, and the caller buffer already exists as `appendLong` (B5a).
+`String(unsafeUninitializedCapacity:)` is excluded by AGENTS.md §2. All 1,018 golden rows and 451
+pattern rows are untouched because the code is untouched.
+
+### S6-05 Docs and thresholds
+
+`docs/benchmarks.md` has the B6 before/after table and the B5 finding. No threshold changed: B6's
+malloc threshold is still 16 per iteration (0 per operation), B5's is 80 (1 per operation), and the
+`bench` job passed with the same files. The final CI run is named in the PR.
+
 ## Checkpoint
 
 The agent stops here. The reviewer checks:
@@ -171,7 +235,7 @@ The agent stops here. The reviewer checks:
 - [ ] The interleaved run and the before/after table, with the same-run C# ratios.
 - [ ] The exhaustive differential and the fuzz target; the negative control failed both.
 - [ ] B5's malloc site and cost; any change is byte-identical on the golden vectors.
-- [ ] The size breakdown accounts for 225,632 bytes and the two options are costed.
+- [ ] The size breakdown accounts for 226,032 bytes and the two options are costed.
 - [ ] Thresholds unchanged except for measured improvements.
 - [ ] CI green, with the `ci:` line per OS.
 
@@ -181,6 +245,10 @@ The agent stops here. The reviewer checks:
   a number; 30 % is the precedent, not a requirement.
 - The danda `।` is 3 bytes, so no 10-byte canonical input can contain it. It is in the exhaustive set
   to prove the fallback, not the fast path.
-- `--allocation-stacks` needs the Swift Runtime module: Linux with Swift 6.4, macOS 26. The macOS
-  runner is 26.6, so both should work. If one does not, the other is the evidence.
+- `--allocation-stacks` is not in package-benchmark 1.36.4, so the malloc was found with valgrind
+  memcheck (count and bytes) and massif (allocator) on Linux; a gdb breakpoint on `malloc` caught the
+  dynamic loader's start-up allocation, not the loop, and was dropped.
+- The fast path grows the parsing binary by 16,928 bytes, so `core-only` misses its 100 KB S5 target
+  at 108,160. The out-of-line variant did not shrink it and made B6 seven times slower, so the size
+  cost is the price of the speed. The reviewer decides whether it is acceptable.
 - The size options are written after the breakdown, in S6-04, and are not implemented in this phase.
