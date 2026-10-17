@@ -1,0 +1,115 @@
+name: release
+
+# ADR-0005 and docs/runbooks/release.md. A tag push validates the version, runs the CI jobs and,
+# after the `production` approval, creates the GitHub Release. A workflow_dispatch run is the dry
+# run: it validates the same things and runs the same CI jobs, and the release job's condition
+# keeps it from creating anything.
+on:
+  push:
+    tags:
+      - "[0-9]*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Version to validate in the dry run, strict X.Y.Z
+        required: true
+        type: string
+
+# Rule: the workflow reads by default. Only the release job writes.
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  preflight:
+    name: preflight
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    outputs:
+      version: ${{ steps.validate.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Validate the version and the changelog section
+        id: validate
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_TAG: ${{ inputs.tag }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            version="$INPUT_TAG"
+          else
+            version="$REF_NAME"
+          fi
+          # Strict semver: X.Y.Z with no leading zero and no pre-release or build suffix.
+          if ! printf '%s' "$version" | grep -Eq '^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$'; then
+            echo "::error::version '$version' is not strict X.Y.Z semver"
+            exit 1
+          fi
+          if ! grep -Eq "^## \[$version\] - [0-9]{4}-[0-9]{2}-[0-9]{2}$" CHANGELOG.md; then
+            echo "::error::CHANGELOG.md has no '## [$version] - YYYY-MM-DD' section"
+            exit 1
+          fi
+          {
+            echo "### preflight: $version"
+            echo ""
+            echo "- version: strict semver"
+            echo "- changelog: \`## [$version] - <date>\` present"
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+  ci:
+    name: ci
+    uses: ./.github/workflows/ci.yml
+    permissions:
+      contents: read
+
+  release:
+    name: release
+    needs: [preflight, ci]
+    # A dispatch dry run, even one made from a tag ref, never releases (rule 3).
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: production
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Create the GitHub Release from the changelog
+        shell: bash
+        env:
+          VERSION: ${{ needs.preflight.outputs.version }}
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          # Re-check in the job that writes, so a tampered preflight output cannot pass.
+          if ! printf '%s' "$VERSION" | grep -Eq '^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$'; then
+            echo "::error::version '$VERSION' is not strict X.Y.Z semver"
+            exit 1
+          fi
+          notes="$(mktemp)"
+          awk -v v="$VERSION" '
+            $0 ~ "^## \\[" v "\\] - " { inside = 1; next }
+            /^## \[/ && inside { exit }
+            inside { print }
+          ' CHANGELOG.md > "$notes"
+          if ! grep -q '[^[:space:]]' "$notes"; then
+            echo "::error::the changelog section for $VERSION is empty"
+            exit 1
+          fi
+          gh release create "$VERSION" \
+            --repo "$REPOSITORY" \
+            --verify-tag \
+            --title "$VERSION" \
+            --notes-file "$notes"

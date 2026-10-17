@@ -3,3 +3,7 @@
 DerivedData/
 *.xcodeproj/xcuserdata/
 Package.resolved
+
+# .NET build output of the vendored C# benchmark
+bin/
+obj/

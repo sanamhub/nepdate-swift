@@ -7,7 +7,7 @@
 ## Decision
 
 `./scripts/ci.sh` runs, in order, printing each command, stopping at the first failure and ending
-with one summary line (`ci: 7/7 gates passed`):
+with one summary line (`ci: 8/8 gates passed`):
 
 1. `swift format lint --strict --recursive Sources Tests`, with the repository's `.swift-format`
    (which turns on `AllPublicDeclarationsHaveDocumentation` and `ValidateDocumentationComments`).
@@ -25,8 +25,11 @@ with one summary line (`ci: 7/7 gates passed`):
    `Examples/.build/release/core-only`, which links only `NepDate`, must not (hub PORT-PLAN
    phase 4). Checked with `grep -a -q`.
 7. Public API check: `swift package diagnose-api-breaking-changes <last-tag>` (from 0.1.1 on).
+8. From S5: `docs-check` on `README.md`, `CHANGELOG.md`, `CONTRIBUTING.md`, `SECURITY.md` and the
+   top-level `docs/*.md` pages: no em dash, no port task ID outside code, every relative link
+   resolves. `docs/adr`, `docs/plan` and `docs/runbooks` keep task and deviation IDs.
 
-Gates that don't apply yet (6 before S4, 7 before 0.1.0) print `skipped` and count as passed.
+Gates that don't apply yet (6 before S4, 7 before 0.1.1) print `skipped` and count as passed.
 
 ## Tests (swift-testing)
 

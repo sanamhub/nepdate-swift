@@ -4,6 +4,8 @@ on:
   pull_request:
   push:
     branches: [main]
+  # release.yml runs the same jobs on a tag, so a tag cannot release without the gates.
+  workflow_call:
 
 permissions:
   contents: read
@@ -28,6 +30,20 @@ jobs:
           persist-credentials: false
       - run: swift --version
       - run: ./scripts/ci.sh
+      - name: DocC builds without warnings (S5-01 AC1)
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcodebuild docbuild \
+            -scheme NepDate \
+            -destination 'generic/platform=macOS' \
+            -derivedDataPath .build/docc 2>&1 | tee docbuild.log
+          if grep -n 'warning:' docbuild.log; then
+            echo "DocC emitted a warning"
+            exit 1
+          fi
+          echo "DocC: no warnings"
+          grep -oE '/[^ ]+\.doccarchive' docbuild.log | tail -n 1 || true
 
   linux:
     runs-on: ubuntu-24.04
@@ -64,6 +80,42 @@ jobs:
           cat ci.log
           [ "$(tail -n 1 ci.log)" = "ci: failed at gate 1: format" ]
           rm Sources/NepDate/Unformatted.swift ci.log
+      - name: readme-check fails on a one-character change (S5-01 AC2)
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp README.md "$RUNNER_TEMP/README.md.orig"
+          trap 'cp "$RUNNER_TEMP/README.md.orig" README.md' EXIT
+          perl -0pi -e 's/year: 2081, month: 4, day: 15/year: 2082, month: 4, day: 15/' README.md
+          if swift run --package-path Tools/Codegen readme-check > readme.log 2>&1; then
+            cat readme.log; echo "readme-check accepted a changed quick start"; exit 1
+          fi
+          cat readme.log
+          grep -q "differs from Examples/Sources/core-only/main.swift" readme.log
+      - name: docs-check fails on an em dash, a task ID and a broken link (S5 docs gate)
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp README.md "$RUNNER_TEMP/README.md.orig"
+          trap 'cp "$RUNNER_TEMP/README.md.orig" README.md' EXIT
+          printf '\nAn em dash — here.\n' >> README.md
+          if swift run --package-path Tools/Codegen docs-check > docs.log 2>&1; then
+            cat docs.log; echo "docs-check accepted an em dash"; exit 1
+          fi
+          grep -q "em dash" docs.log
+          cp "$RUNNER_TEMP/README.md.orig" README.md
+          printf '\nTask S9-99.\n' >> README.md
+          if swift run --package-path Tools/Codegen docs-check > docs.log 2>&1; then
+            cat docs.log; echo "docs-check accepted a task ID"; exit 1
+          fi
+          grep -q "task ID S9-99" docs.log
+          cp "$RUNNER_TEMP/README.md.orig" README.md
+          perl -0pi -e 's{\(docs/API\.md\)}{(docs/does-not-exist.md)}' README.md
+          if swift run --package-path Tools/Codegen docs-check > docs.log 2>&1; then
+            cat docs.log; echo "docs-check accepted a broken link"; exit 1
+          fi
+          grep -q "does not resolve" docs.log
+          cp "$RUNNER_TEMP/README.md.orig" README.md
 
   windows:
     runs-on: windows-latest
@@ -102,7 +154,7 @@ jobs:
           persist-credentials: false
       # Times are printed for the record; only the malloc thresholds are gated (ADR-0004).
       - name: Benchmarks (CI runner, not the reference machine)
-        run: swift package --package-path Benchmarks benchmark --no-progress
+        run: swift package --package-path Benchmarks benchmark --no-progress --target NepDateBenchmarks
       - name: Malloc thresholds
         run: >
           swift package --package-path Benchmarks benchmark thresholds check
