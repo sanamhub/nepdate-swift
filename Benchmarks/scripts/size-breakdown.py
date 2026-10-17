@@ -3,12 +3,13 @@
 
 Runs on macOS, where `size` and `nm` understand Mach-O:
 
-  python3 size-breakdown.py --baseline B --core-only C --with-patro P
+  python3 size-breakdown.py --baseline B --core-only C --with-patro P \
+    --unstripped-baseline UB --unstripped-core UC --unstripped-patro UP
 
-The section table sums what changed in the file; the symbol table names the largest additions. A
-stripped Swift binary keeps the string literals in __TEXT,__cstring and the Swift metadata in the
-__swift5_* sections, neither of which is a symbol, so the symbol sum is smaller than the file delta
-and the remainder is reported as literals and metadata.
+Apple's `nm -S` reports zero sizes for Mach-O ("sizes with --print-size for Mach-O files are always
+zero"), so symbol sizes come from the sorted addresses of the unstripped copies: a text symbol lasts
+until the next symbol. Stripping removes the symbol table, not code, so the layout and the sizes are
+the ones in the shipped binary.
 """
 
 import argparse
@@ -17,8 +18,9 @@ import re
 import subprocess
 import sys
 
-SECTION = re.compile(r"^\s*Section (__\w+): (0x[0-9a-fA-F]+)")
-SYMBOL = re.compile(r"^([0-9a-fA-F]+) ([0-9a-fA-F]+) (\w) (.+)$")
+SECTION = re.compile(r"^\s*Section (__\w+): (\d+)")
+SEGMENT = re.compile(r"^Segment (__\w+):")
+SYMBOL = re.compile(r"^([0-9a-fA-F]+) (\w) (.+)$")
 BUCKETS = [
     ("patro tables and names", ("PatroData", "Patro", "Named", "CalendarInfo", "PatroEvents")),
     ("core", ("NepaliDate", "NepDate")),
@@ -31,20 +33,36 @@ def run(*arguments):
 
 
 def sections(path):
+    """Section sizes in bytes, keyed by segment and section so the two __const entries differ."""
     sizes = {}
+    segment = None
     for line in run("size", "-m", path).splitlines():
-        match = SECTION.match(line)
+        match = SEGMENT.match(line)
         if match:
-            sizes[match.group(1)] = int(match.group(2), 16)
+            segment = match.group(1)
+            continue
+        match = SECTION.match(line)
+        if match and segment:
+            sizes[f"{segment}.{match.group(1)}"] = int(match.group(2))
     return sizes
 
 
-def symbols(path):
-    sizes = {}
-    for line in run("nm", "-S", "-n", "-U", path).splitlines():
+def symbol_sizes(path):
+    """Text symbol sizes from consecutive addresses in an unstripped binary."""
+    entries = []
+    for line in run("nm", "-n", "-U", path).splitlines():
         match = SYMBOL.match(line)
         if match:
-            sizes[match.group(4)] = int(match.group(2), 16)
+            entries.append((int(match.group(1), 16), match.group(2), match.group(3).strip()))
+    entries.sort()
+    sizes = {}
+    for index, (address, kind, name) in enumerate(entries):
+        if kind not in ("T", "t"):
+            continue
+        if index + 1 < len(entries):
+            following = entries[index + 1][0]
+            if following > address:
+                sizes[name] = following - address
     return sizes
 
 
@@ -60,6 +78,9 @@ def main():
     parser.add_argument("--baseline", required=True)
     parser.add_argument("--core-only", required=True)
     parser.add_argument("--with-patro", required=True)
+    parser.add_argument("--unstripped-baseline")
+    parser.add_argument("--unstripped-core")
+    parser.add_argument("--unstripped-patro")
     arguments = parser.parse_args()
 
     baseline_size = os.path.getsize(arguments.baseline)
@@ -67,73 +88,74 @@ def main():
     patro_size = os.path.getsize(arguments.with_patro)
     core_delta = core_size - baseline_size
     patro_delta = patro_size - baseline_size
+    patro_over_core = patro_size - core_size
 
     print("## File sizes")
     print()
-    print("| Binary | Stripped bytes | Delta from baseline |")
-    print("|---|---:|---:|")
-    print(f"| baseline | {baseline_size:,} | 0 |")
-    print(f"| core-only | {core_size:,} | {core_delta:+,} |")
-    print(f"| with-patro | {patro_size:,} | {patro_delta:+,} |")
+    print("| Binary | Stripped bytes | Delta from baseline | Delta from core-only |")
+    print("|---|---:|---:|---:|")
+    print(f"| baseline | {baseline_size:,} | 0 | |")
+    print(f"| core-only | {core_size:,} | {core_delta:+,} | 0 |")
+    print(f"| with-patro | {patro_size:,} | {patro_delta:+,} | {patro_over_core:+,} |")
     print()
 
     baseline_sections = sections(arguments.baseline)
     core_sections = sections(arguments.core_only)
     patro_sections = sections(arguments.with_patro)
-    names = sorted(set(core_sections) | set(patro_sections))
-    print("## Sections, core-only against with-patro")
+    names = sorted(set(baseline_sections) | set(core_sections) | set(patro_sections))
+    print("## Sections")
     print()
-    print("| Section | core-only bytes | with-patro bytes | delta |")
-    print("|---|---:|---:|---:|")
+    print("| Section | baseline | core-only | with-patro | delta from baseline | delta from core |")
+    print("|---|---:|---:|---:|---:|---:|")
     section_sum = 0
     for name in names:
+        baseline = baseline_sections.get(name, 0)
         core = core_sections.get(name, 0)
         patro = patro_sections.get(name, 0)
-        delta = patro - core
+        delta = patro - baseline
+        if not delta:
+            continue
         section_sum += delta
-        if delta:
-            print(f"| {name} | {core:,} | {patro:,} | {delta:+,} |")
-    print(f"| **section sum** | | | **{section_sum:+,}** |")
+        print(f"| {name} | {baseline:,} | {core:,} | {patro:,} | {delta:+,} | {patro - core:+,} |")
+    print(f"| **section sum** | | | | **{section_sum:+,}** | |")
     print()
 
-    core_symbols = symbols(arguments.core_only)
-    patro_symbols = symbols(arguments.with_patro)
-    deltas = []
-    for name, size in patro_symbols.items():
-        delta = size - core_symbols.get(name, 0)
-        if delta > 0:
-            deltas.append((delta, name))
-    deltas.sort(reverse=True)
-    symbol_sum = sum(delta for delta, _ in deltas)
+    if arguments.unstripped_core and arguments.unstripped_patro:
+        core_symbols = symbol_sizes(arguments.unstripped_core)
+        patro_symbols = symbol_sizes(arguments.unstripped_patro)
+        deltas = []
+        for name, size in patro_symbols.items():
+            delta = size - core_symbols.get(name, 0)
+            if delta > 0:
+                deltas.append((delta, name))
+        deltas.sort(reverse=True)
+        symbol_sum = sum(delta for delta, _ in deltas)
 
-    print("## Symbols")
-    print()
-    print("| Symbol | Delta bytes | Bucket |")
-    print("|---|---:|---|")
-    for delta, name in deltas[:20]:
-        print(f"| `{name}` | {delta:+,} | {bucket(name)} |")
-    print(f"| **symbol sum, {len(deltas)} symbols** | **{symbol_sum:+,}** | |")
-    print()
+        print("## Symbols, with-patro against core-only")
+        print()
+        print("| Symbol | Delta bytes | Bucket |")
+        print("|---|---:|---|")
+        for delta, name in deltas[:25]:
+            print(f"| `{name}` | {delta:+,} | {bucket(name)} |")
+        print(f"| **symbol sum, {len(deltas)} symbols** | **{symbol_sum:+,}** | |")
+        print()
 
-    print("## Buckets")
-    print()
-    print("| Bucket | Symbol delta bytes |")
-    print("|---|---:|")
-    buckets = {}
-    for delta, name in deltas:
-        label = bucket(name)
-        buckets[label] = buckets.get(label, 0) + delta
-    for label, total in sorted(buckets.items(), key=lambda item: -item[1]):
-        print(f"| {label} | {total:+,} |")
-    print()
+        print("## Buckets")
+        print()
+        print("| Bucket | Symbol delta bytes |")
+        print("|---|---:|")
+        buckets = {}
+        for delta, name in deltas:
+            buckets[bucket(name)] = buckets.get(bucket(name), 0) + delta
+        for label, total in sorted(buckets.items(), key=lambda item: -item[1]):
+            print(f"| {label} | {total:+,} |")
+        print()
 
     print("## Remainder")
     print()
-    print(f"- file delta: {patro_delta:+,} bytes")
-    print(f"- section sum: {section_sum:+,} bytes")
-    print(f"- symbol sum: {symbol_sum:+,} bytes")
-    print(f"- not named by a symbol (literals, metadata, padding): {patro_delta - symbol_sum:+,} bytes")
-    print(f"- baseline sections: {sum(baseline_sections.values()):,} bytes")
+    print(f"- file delta from baseline: {patro_delta:+,} bytes")
+    print(f"- section sum from baseline: {section_sum:+,} bytes")
+    print(f"- difference (page rounding, load commands, symbol table): {patro_delta - section_sum:+,} bytes")
     return 0
 
 
