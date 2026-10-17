@@ -35,7 +35,8 @@ gate_test() {
 }
 
 gate_codegen() {
-  run swift run --package-path Tools/Codegen codegen --check
+  run swift run --package-path Tools/Codegen codegen --check || return 1
+  run swift run --package-path Tools/Codegen readme-check
 }
 
 gate_patro_free() {
@@ -54,8 +55,12 @@ gate_api() {
   echo "skipped (starts with 0.1.1)"
 }
 
-gates=(format build build_core test codegen patro_free api)
-names=(format build build-core test codegen patro-free api)
+gate_docs() {
+  run swift run --package-path Tools/Codegen docs-check
+}
+
+gates=(format build build_core test codegen patro_free api docs)
+names=(format build build-core test codegen patro-free api docs)
 
 for i in "${!gates[@]}"; do
   n=$((i + 1))

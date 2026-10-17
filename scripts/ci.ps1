@@ -34,7 +34,10 @@ function Gate-Test {
 }
 
 function Gate-Codegen {
-  Invoke-Step swift @('run', '--package-path', 'Tools/Codegen', 'codegen', '--check')
+  if (-not (Invoke-Step swift @('run', '--package-path', 'Tools/Codegen', 'codegen', '--check'))) {
+    return $false
+  }
+  Invoke-Step swift @('run', '--package-path', 'Tools/Codegen', 'readme-check')
 }
 
 function Gate-PatroFree {
@@ -47,6 +50,10 @@ function Gate-Api {
   return $true
 }
 
+function Gate-Docs {
+  Invoke-Step swift @('run', '--package-path', 'Tools/Codegen', 'docs-check')
+}
+
 $gates = @(
   @{ Name = 'format'; Run = { Gate-Format } },
   @{ Name = 'build'; Run = { Gate-Build } },
@@ -54,7 +61,8 @@ $gates = @(
   @{ Name = 'test'; Run = { Gate-Test } },
   @{ Name = 'codegen'; Run = { Gate-Codegen } },
   @{ Name = 'patro-free'; Run = { Gate-PatroFree } },
-  @{ Name = 'api'; Run = { Gate-Api } }
+  @{ Name = 'api'; Run = { Gate-Api } },
+  @{ Name = 'docs'; Run = { Gate-Docs } }
 )
 
 for ($i = 0; $i -lt $gates.Count; $i++) {

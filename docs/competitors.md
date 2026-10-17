@@ -1,8 +1,8 @@
 # Other Swift libraries for the Bikram Sambat calendar
 
 Checked 2026-10-06, rechecked 2026-10-08 (GitHub, CocoaPods, Swift Package Index, Apple and
-swift-foundation sources; no new Swift package found). Used by task S5-02. The Swift Package
-Index returns no package for "nepali".
+swift-foundation sources; no new Swift package found). Used by the benchmark plan below. The Swift
+Package Index returns no package for "nepali".
 
 | Library | Latest | License | BS range | Approach | State |
 |---|---|---|---|---|---|
@@ -21,7 +21,7 @@ Bikram Sambat is solar with 29 to 32-day months set by the calendar committee, s
 differ. swift-foundation has no Nepali identifier, and upstream ICU and CLDR have no Nepali
 calendar. So nothing native replaces this package; the README warns against `.vikram`.
 
-**Benchmark plan:** task S5-02. Competitors run B1 (BS to AD) and B2 (AD to BS) over the 64
+**Benchmark plan:** competitors run B1 (BS to AD) and B2 (AD to BS) over the 64
 `shared/spec/BENCHMARK.md` dates; only this package runs B3 to B8 (no competitor has the
 operation, or the shivathapaa package has it only through its Kotlin runtime).
 

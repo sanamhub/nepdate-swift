@@ -133,8 +133,8 @@ Notes:
 - `today(in:)` defaults to Nepal time, not the device zone. It can't throw, so a clock outside
   AD 1844-04-11 to 2143-04-15 gives `min` or `max` (hub PORT-PLAN "today" rule).
 - `NepDate` declares none of the `NepDatePatro` symbols. A caller of `calendarInfo` imports both
-  modules. `NepDatePatro` reads a date's serial through `package` access (S4-01); `package`
-  symbols are not part of this contract.
+  modules. `NepDatePatro` reads a date's serial through `package` access; `package` symbols are not
+  part of this contract.
 - Allocation (ADR-0002): conversion, arithmetic, parsing, `calendarInfo` and iterating its
   `events` allocate nothing. A formatter allocates once when its result is longer than 15 UTF-8
   bytes; the `append…(to:)` forms allocate only when the caller's buffer must grow.
