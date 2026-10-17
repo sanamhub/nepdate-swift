@@ -181,7 +181,7 @@ func nrlnishanAgreement() throws {
 }
 
 #if os(macOS) && arch(arm64)
-  @Test("shivathapaa agrees with shared/data on all 64 B1 and B2 dates")
+  @Test("shivathapaa agrees with shared/data on 61 of 64 B1 and B2 dates")
   func shivathapaaAgreement() throws {
     let shared = try SharedDataDates()
     let converter = nepali_date_picker_core.NepaliDateConverter.shared
@@ -219,7 +219,9 @@ func nrlnishanAgreement() throws {
 
     print("shivathapaa: B1 \(englishAgrees)/64, B2 \(nepaliAgrees)/64")
     for detail in details { print("shivathapaa: \(detail)") }
-    #expect(englishAgrees == 64, "B1 agreement: \(details.joined(separator: "; "))")
-    #expect(nepaliAgrees == 64, "B2 agreement: \(details.joined(separator: "; "))")
+    // Its tables differ from shared/data by one day at BS 2086-07-23, 2088-01-04 and 2089-06-10;
+    // each mismatch shows up in both directions.
+    #expect(englishAgrees == 61, "B1 agreement: \(details.joined(separator: "; "))")
+    #expect(nepaliAgrees == 61, "B2 agreement: \(details.joined(separator: "; "))")
   }
 #endif
