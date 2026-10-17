@@ -45,12 +45,20 @@ public func fuzz(_ data: UnsafePointer<UInt8>, _ size: Int) -> CInt {
     fatalError("parse(\(text)) = \(fast), parseSlow = \(slow)")
   }
   if canonicalShape(text) {
+    let canonical: Outcome
     do {
-      if try NepaliDate.parseCanonical(text.utf8) == nil {
+      guard let date = try NepaliDate.parseCanonical(text.utf8) else {
         fatalError("canonical text declined by the fast path: \(text)")
       }
+      canonical = .date(date)
+    } catch let error as NepDateError {
+      // A canonical shape can still be an invalid date; its validation error is an answer.
+      canonical = .error(error)
     } catch {
-      fatalError("canonical text threw \(error): \(text)")
+      fatalError("canonical text threw a non-NepDateError: \(error)")
+    }
+    if canonical != slow {
+      fatalError("parseCanonical(\(text)) = \(canonical), parseSlow = \(slow)")
     }
   }
   return 0
