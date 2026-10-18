@@ -21,7 +21,7 @@ The S6 breakdown of the `with-patro` delta (`docs/plan/S6-perf.md`) shows that m
 | bilingual name literals (`__TEXT.__cstring`) | 65,872 |
 | day tables (`__DATA.__data`) | 14,760 |
 | name `switch` (`__TEXT.__text`) | 36,024 |
-| the core product and patro metadata | 108,160 and about 1,200 |
+| the core product and patro metadata | 108,160 and 1,216 |
 | **total** | **226,032** |
 
 S6-04 considered two ways to get under 200 KB and rejected both:
