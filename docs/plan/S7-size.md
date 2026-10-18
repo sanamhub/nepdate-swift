@@ -4,7 +4,7 @@ Read first: ADR-0002 §7, the size results in [`S6-perf.md`](S6-perf.md), the si
 [`docs/benchmarks.md`](../benchmarks.md), ADR-0005 (ADRs are immutable), and the CI jobs in
 [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml).
 
-Precondition: S6 merged on `main` (7d7d00d). S6 measured `core-only` at 159,480 bytes, +108,160
+Precondition: S6 merged on `main` (7d7d00d, rewritten to d5cd261 with the same tree when an attribution line was removed from history). S6 measured `core-only` at 159,480 bytes, +108,160
 over the baseline and 16,928 over the S5 base (c061506, 142,552), and `with-patro` at 277,352
 bytes, +226,032. Both are over their ADR-0002 §7 targets.
 
@@ -89,7 +89,7 @@ AC: the docs gate is green and links resolve.
 
 ### S7-01 One-pass canonical parser: reverted
 
-The one-pass loop was measured against `main` 7d7d00d in `perf-size` run 39088610867 and
+The one-pass loop was measured against `main` 7d7d00d (now d5cd261) in `perf-size` run 39088610867 and
 `perf-compare` run 39088618338 (five rounds per side, C# on the same runner).
 
 | Measurement | main | one pass | Limit | Result |
@@ -102,7 +102,7 @@ The one-pass loop was measured against `main` 7d7d00d in `perf-size` run 3908861
 
 The one-pass version did what it was meant to do for size: 16,480 bytes smaller than `main` and 448
 over the S5 base, which would have brought `core-only` under 100 KB at a delta of 91,680. It cost
-46 % of B6 on ubuntu and 28 % on macOS, so it was reverted (98eadef). The exhaustive differential and
+46 % of B6 on ubuntu and 28 % on macOS, so it was reverted (21e20d6). The exhaustive differential and
 the fuzz target were green on the one-pass version (CI run 39088640126), so the revert is about
 speed, not correctness.
 
