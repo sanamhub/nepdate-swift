@@ -109,6 +109,39 @@ speed, not correctness.
 Same-run C# for reference: 28.2 ns/op on ubuntu (old ratio 1.11, one pass 1.63) and 23.8 on macOS
 (old 1.37, one pass 1.75).
 
+### S7-02 ADR-0006
+
+`docs/adr/0006-binary-size-targets.md` is accepted and listed in the ADR index. It replaces ADR-0002
+§7's two size rows with `with-patro` < 250 KB (256,000 B) and `core-only` < 120 KB (122,880 B),
+records the 28,254 bytes per data year, and sets the next review at 0.2.0 or the next data year.
+ADR-0002 is not edited.
+
+### S7-03 Size gate
+
+`Benchmarks/size-targets.json` holds 122,880 for `core-only` and 256,000 for `with-patro`.
+`Benchmarks/scripts/size-gate.py` reads it and the three stripped binaries, prints one line per
+product and exits 1 above a limit. The macOS job in `ci.yml` runs it after the DocC build on every
+pull request and on `main`; the step has no `|| true`, and the masks were removed from the `perf-size`
+measurement commands.
+
+CI run 39089743699, macOS:
+
+```
+size-gate: core-only +108,160 B ok (limit 122,880 B)
+size-gate: with-patro +226,032 B ok (limit 256,000 B)
+```
+
+Negative control, throwaway PR #7 (closed): `with_patro_max_bytes` was lowered to 200,000. The macOS
+job ran `ci: 8/8 gates passed`, then:
+
+```
+size-gate: core-only +108,160 B ok (limit 122,880 B)
+size-gate: with-patro +226,032 B OVER (limit 200,000 B)
+size-gate: failed; see docs/adr/0006-binary-size-targets.md
+```
+
+and the step exited 1; the other four jobs were green.
+
 ## Checkpoint
 
 The agent stops here. The reviewer checks:
