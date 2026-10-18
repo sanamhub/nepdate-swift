@@ -21,7 +21,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          git fetch --depth 1 origin "${BASE_REF:-main}"
+          git fetch --depth 1 origin main
           base_sha="$(git rev-parse FETCH_HEAD)"
           echo "base $base_sha"
           echo "head $(git rev-parse HEAD)"
