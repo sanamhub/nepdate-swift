@@ -85,6 +85,30 @@ AC3: the limits live in one checked-in file, not in YAML.
 
 AC: the docs gate is green and links resolve.
 
+## Results (2026-10-18)
+
+### S7-01 One-pass canonical parser: reverted
+
+The one-pass loop was measured against `main` 7d7d00d in `perf-size` run 39088610867 and
+`perf-compare` run 39088618338 (five rounds per side, C# on the same runner).
+
+| Measurement | main | one pass | Limit | Result |
+|---|---:|---:|---:|---|
+| `core-only`, stripped | 159,480 | 143,000 | 146,552 (S5 base 142,552 + 4 KB) | pass |
+| `core-only` delta from baseline | 108,160 | 91,680 | 95,232 | pass |
+| `with-patro`, stripped | 277,352 | 277,384 | | |
+| B6 ubuntu p50 ns/op | 31.5 | 46.0 | 34.65 (10 % over 31.5) | fail, +46.3 % |
+| B6 macOS p50 ns/op | 32.5 | 41.7 | 35.75 (10 % over 32.5) | fail, +28.0 % |
+
+The one-pass version did what it was meant to do for size: 16,480 bytes smaller than `main` and 448
+over the S5 base, which would have brought `core-only` under 100 KB at a delta of 91,680. It cost
+46 % of B6 on ubuntu and 28 % on macOS, so it was reverted (98eadef). The exhaustive differential and
+the fuzz target were green on the one-pass version (CI run 39088640126), so the revert is about
+speed, not correctness.
+
+Same-run C# for reference: 28.2 ns/op on ubuntu (old ratio 1.11, one pass 1.63) and 23.8 on macOS
+(old 1.37, one pass 1.75).
+
 ## Checkpoint
 
 The agent stops here. The reviewer checks:
