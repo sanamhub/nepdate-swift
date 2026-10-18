@@ -1,4 +1,1 @@
-{
-  "core_only_max_bytes": 122880,
-  "with_patro_max_bytes": 256000
-}
+{"core_only_max_bytes": 122880, "with_patro_max_bytes": 200000}
