@@ -7,7 +7,7 @@
 ## Context
 
 ADR-0002 §7 set two size targets: `with-patro` minus baseline < 200 KB, and `core-only` minus
-baseline < 100 KB, both on a stripped arm64 release build. S5 measured 225,632 and 91,232 bytes. S6
+baseline < 100 KB, both on a stripped arm64 release build. In this ADR 1 KB is 1,024 bytes. S5 measured 225,632 and 91,232 bytes. S6
 added the B6 canonical fast path and measured 226,032 and 108,160. Both are over the ADR-0002
 numbers.
 
@@ -46,10 +46,10 @@ stays.
   target leaves 14,720 bytes. If a later change brings the delta under 100 KB (102,400) without
   losing B6, the target tightens back to 100 KB in a new ADR.
 - **Yearly growth:** the patro delta is 226,032 bytes over 8 data years, 28,254 bytes per data year.
-  A ninth year is expected to add about 28 KB, for about 254 KB, inside 256,000. A second new year
+  A ninth year is expected to add about 28,254 bytes, for about 254,286, under 256,000. A second new year
   needs a new target.
 - **Measurement:** macOS arm64, `swift build -c release`, stripped, against the baseline executable.
-  The gate is the `size` step in `ci.yml`, with the limits in `Benchmarks/size-targets.json`.
+  The gate is the `Size gate (ADR-0006)` step of the macOS job in `ci.yml`, with the limits in `Benchmarks/size-targets.json`.
 - **Next review:** the 0.2.0 release, or when a data year is added, whichever comes first.
 
 ## Consequences

@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
-"""S7-03: fail when a stripped Examples binary is over its ADR-0006 target.
+"""S7-03: fail unless each stripped Examples delta is under its ADR-0006 target.
+
+ADR-0006 states the targets as strict bounds (<), so a delta equal to the limit fails.
 
 The limits live in Benchmarks/size-targets.json, not in the workflow. Deltas are measured from the
 baseline executable, which links neither product.
@@ -33,9 +35,9 @@ def main():
     failed = False
     for name, value, key in checks:
         limit = int(targets[key])
-        status = "ok" if value <= limit else "OVER"
+        status = "ok" if value < limit else "OVER"
         print(f"size-gate: {name} +{value:,} B {status} (limit {limit:,} B)")
-        if value > limit:
+        if value >= limit:
             failed = True
     if failed:
         print("size-gate: failed; see docs/adr/0006-binary-size-targets.md")
