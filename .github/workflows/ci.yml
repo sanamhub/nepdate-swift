@@ -189,9 +189,9 @@ jobs:
       - name: Build the fuzz targets
         run: >
           swift build -c debug --package-path Fuzz -Xswiftc -sanitize=fuzzer,address
-          -Xswiftc -parse-as-library
+          -Xswiftc -parse-as-library -Xswiftc -enable-testing
       # Seed corpus: the input column of parse.tsv, one file per row.
-      - name: Fuzz parse, parseLenient and format for 60 seconds each
+      - name: Fuzz parse, parseLenient, canonical parse and format for 60 seconds each
         shell: bash
         env:
           ASAN_OPTIONS: detect_leaks=0
@@ -203,8 +203,11 @@ jobs:
             n=$((n + 1))
             printf '%s' "$line" > "corpus/row$n"
           done
+          # Two canonical shapes the fast path must handle: an invalid date and a non-digit.
+          printf '9999/99/99' > corpus/canonical-invalid
+          printf '2081/0:/15' > corpus/canonical-nondigit
           bin=$(swift build -c debug --package-path Fuzz --show-bin-path)
-          for target in FuzzParse FuzzParseLenient FuzzFormat; do
+          for target in FuzzParse FuzzParseLenient FuzzFormat FuzzParseCanonical; do
             mkdir -p "work/$target"
             cp corpus/* "work/$target/"
             "$bin/$target" -max_total_time=60 "work/$target"

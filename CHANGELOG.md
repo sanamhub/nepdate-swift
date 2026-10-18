@@ -4,6 +4,13 @@ All notable changes to this package are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions are SwiftPM tags without a `v`
 prefix (ADR-0005).
 
+## [Unreleased]
+
+### Added
+
+- A canonical-shape fast path in the strict parser, with an exhaustive differential test and a
+  differential fuzz target.
+
 ## [0.1.0] - 2026-10-18
 
 ### Added

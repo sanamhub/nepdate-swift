@@ -61,6 +61,9 @@ let package = Package(
     .executableTarget(
       name: "first-access",
       dependencies: [.product(name: "NepDate", package: "nepdate-swift")]),
+    .executableTarget(
+      name: "b5-profile",
+      dependencies: [.product(name: "NepDate", package: "nepdate-swift")]),
     .testTarget(
       name: "CompetitorAgreementTests",
       dependencies: ["BenchmarkInputs"] + competitorDependencies),
