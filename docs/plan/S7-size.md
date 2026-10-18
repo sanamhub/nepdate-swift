@@ -109,6 +109,10 @@ speed, not correctness.
 Same-run C# for reference: 28.2 ns/op on ubuntu (old ratio 1.11, one pass 1.63) and 23.8 on macOS
 (old 1.37, one pass 1.75).
 
+The year-hundreds negative control was repeated on the parser that remained, in throwaway PR #8
+(closed): the exhaustive test reported 253,127 declined canonical rows, first `1901-01-01`, and
+`FuzzParseCanonical` failed on its `9999/99/99` seed. The other four jobs were green.
+
 ### S7-02 ADR-0006
 
 `docs/adr/0006-binary-size-targets.md` is accepted and listed in the ADR index. It replaces ADR-0002
