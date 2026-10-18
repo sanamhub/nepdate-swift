@@ -144,29 +144,31 @@ Neither competitor is ranked above this package. Both are slower on B1 and B2 an
 ## Size
 
 `Examples` built with `swift build -c release`, stripped, arm64, on macos-latest with Swift 6.3.3.
-The baseline executable links neither product, so the deltas are what each product adds.
+The baseline executable links neither product, so the deltas are what each product adds. The targets
+are ADR-0006, which replaces ADR-0002 §7's two size rows; the limits are in
+`Benchmarks/size-targets.json` and the macOS CI job checks them on every pull request and on `main`.
 
-| Binary | Stripped bytes | Delta from baseline | Target (ADR-0002 §7) | Result |
+| Binary | Stripped bytes | Delta from baseline | Target (ADR-0006) | Result |
 |---|---:|---:|---|---|
 | baseline | 51,320 | 0 | none | |
-| core-only | 142,552 | 91,232 | less than 100 KB | pass |
-| with-patro | 276,952 | 225,632 | less than 200 KB | **miss by 20,832 bytes** |
+| core-only | 159,480 | 108,160 | less than 120 KB (122,880 B) | pass |
+| with-patro | 277,352 | 226,032 | less than 250 KB (256,000 B) | pass |
 
-The miss holds under either reading of KB: 225,632 is above 200,000 and above 204,800. The patro
-product adds the dense day tables, the event tables and the 753-case name `switch` with its string
-literals, which is more than ADR-0002's estimate of 120 to 170 KB. No optimisation was attempted
-after the measurement; the number is reported as measured.
+The patro product adds 117,872 bytes over `core-only`: 65,872 of bilingual name literals, 14,760 of
+day tables and 36,024 of the name switch. S5 measured 142,552 and 276,952 against the old 100 KB and
+200 KB targets; the parser fast path added 16,928 bytes to `core-only` and almost nothing to
+`with-patro`, which dead-strips it. The section and symbol breakdown, the two rejected options and
+the one data year of headroom are in [`plan/S6-perf.md`](plan/S6-perf.md) and
+[`adr/0006-binary-size-targets.md`](adr/0006-binary-size-targets.md).
 
-The parser fast path changes these numbers on the same runner: `core-only` goes from 142,552 to
-159,480, so its delta becomes 108,160 and misses the 100 KB target by 8,160; `with-patro` goes from
-276,952 to 277,352, a delta of 226,032. The parser is dead-stripped from `with-patro`, so almost all
-of its 16,928 bytes reach only `core-only`. The section and symbol breakdown, and two costed options
-for the patro bytes, are in [`plan/S6-perf.md`](plan/S6-perf.md).
+S7 tried a one-pass parser that met the size target (`core-only` 143,000, delta 91,680) but cost
+46 % of B6 on ubuntu and 28 % on macOS, so it was reverted; see
+[`plan/S7-size.md`](plan/S7-size.md).
 
 ## Targets
 
-ADR-0002 §7: B1, B2 and B7 within 1.5 times C# on the same runner, zero mallocs for B1 to B4, B5a,
-B6 to B8, and one malloc for B5.
+ADR-0002 §7 for the times and mallocs, ADR-0006 for the two size rows: B1, B2 and B7 within 1.5
+times C# on the same runner, zero mallocs for B1 to B4, B5a, B6 to B8, and one malloc for B5.
 
 | Target | ubuntu-latest (shared EPYC 9V45) | macos-latest (shared M1) | Result |
 |---|---|---|---|
@@ -175,8 +177,8 @@ B6 to B8, and one malloc for B5.
 | B7 at most 1.5 times C# | 1.01 | 0.86 | pass |
 | 0 mallocs, B1 to B4, B6 to B8 | 0 | 0 | pass |
 | 1 malloc, B5 | 1 | 1 | pass |
-| `core-only` under 100 KB | 91,232 bytes | | pass |
-| `with-patro` under 200 KB | 225,632 bytes | | miss, reported above |
+| `core-only` under 120 KB (ADR-0006) | 108,160 bytes | | pass |
+| `with-patro` under 250 KB (ADR-0006) | 226,032 bytes | | pass |
 
 The `bench` job in `ci.yml` checks the malloc thresholds on every pull request. The times are printed
 there but not gated, because shared runners are noisy.
