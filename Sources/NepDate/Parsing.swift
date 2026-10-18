@@ -117,7 +117,7 @@ extension NepaliDate {
     guard isStrictSeparatorByte(b4) else { return nil }
     guard isStrictSeparatorByte(b7) else { return nil }
     guard isASCIIDigitByte(b0) else { return nil }
-    guard isASCIIDigitByte(b1) else { return nil }
+    guard b1 >= 0x30 && b1 <= 0x38 else { return nil }
     guard isASCIIDigitByte(b2) else { return nil }
     guard isASCIIDigitByte(b3) else { return nil }
     guard isASCIIDigitByte(b5) else { return nil }
