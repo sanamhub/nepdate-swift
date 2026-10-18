@@ -44,6 +44,18 @@ jobs:
           fi
           echo "DocC: no warnings"
           grep -oE '/[^ ]+\.doccarchive' docbuild.log | tail -n 1 || true
+      - name: Size gate (ADR-0006)
+        shell: bash
+        run: |
+          set -euo pipefail
+          swift build -c release --package-path Examples
+          bin="$(swift build -c release --package-path Examples --show-bin-path)"
+          for name in baseline core-only with-patro; do strip "$bin/$name"; done
+          python3 Benchmarks/scripts/size-gate.py \
+            --targets Benchmarks/size-targets.json \
+            --baseline "$bin/baseline" \
+            --core-only "$bin/core-only" \
+            --with-patro "$bin/with-patro"
 
   linux:
     runs-on: ubuntu-24.04
