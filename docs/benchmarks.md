@@ -93,6 +93,32 @@ the last decile includes scheduler jitter that p50 does not.
 | B7-sorted | 100.9 | 264.5 | 0 | PATRO §3's binary-search layout, for comparison with B7 |
 | MonthRange | 79.4 | 214.2 | 0 | one month of `NepaliDateRange` per input |
 
+## B6 fast path, same-run before and after
+
+The B6 row in the tables above is from the previous full run. The strict parser gained a
+canonical-shape fast path: exactly 10 ASCII bytes with digits at 0 to 3, 5 to 6 and 8 to 9 and a
+strict separator at 4 and 7, with the general loop as the fallback. This run measures `main`
+(c061506, old) and the change (new) in one job, alternating old and new five times each, with the
+C# baseline on the same runner:
+https://github.com/sanamhub/nepdate-swift/actions/runs/39070430969
+
+| Runner and load | old p50 ns/op | new p50 ns/op | change | old p90 | new p90 | C# same runner ns/op | old/C# | new/C# |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| ubuntu-latest, AMD EPYC 7763, 4 vCPU, shared | 63.3 | 31.6 | -50.0 % | 63.5 | 32.1 | 28.2 | 2.25 | 1.12 |
+| macos-latest, Apple M1 virtual, 3 vCPU, shared | 56.6 | 32.5 | -42.5 % | 72.9 | 39.1 | 24.6 | 2.30 | 1.32 |
+
+Both sides allocate 0. The quiet full run before a release replaces the B6 row above with the new
+number.
+
+## B5 allocation
+
+B5 returns a new `String`, so one allocation per operation is the design. A valgrind memcheck run of
+1,000 calls of `long(weekday: true, lang: .nepali)` recorded exactly 1,000 mallocs of 96 bytes, one
+per call; the result is 59 UTF-8 bytes. The allocating form is 93.7 ns/op slower than B5a on both
+runners in the same run (531.2 against 437.5 on ubuntu, 390.6 against 296.9 on macOS), which covers
+the allocation, the byte-counting first pass and the `String` return. A hot loop uses
+`appendLong(to:)`, which is B5a and allocates 0.
+
 ## Competitors
 
 B1 and B2 over the same 64 dates, run by the `CompetitorBenchmarks` target. The "agrees" columns come
@@ -130,6 +156,12 @@ The miss holds under either reading of KB: 225,632 is above 200,000 and above 20
 product adds the dense day tables, the event tables and the 753-case name `switch` with its string
 literals, which is more than ADR-0002's estimate of 120 to 170 KB. No optimisation was attempted
 after the measurement; the number is reported as measured.
+
+The parser fast path changes these numbers on the same runner: `core-only` goes from 142,552 to
+159,480, so its delta becomes 108,160 and misses the 100 KB target by 8,160; `with-patro` goes from
+276,952 to 277,352, a delta of 226,032. The parser is dead-stripped from `with-patro`, so almost all
+of its 16,928 bytes reach only `core-only`. The section and symbol breakdown, and two costed options
+for the patro bytes, are in [`plan/S6-perf.md`](plan/S6-perf.md).
 
 ## Targets
 

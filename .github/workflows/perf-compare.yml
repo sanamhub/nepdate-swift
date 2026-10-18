@@ -1,0 +1,156 @@
+name: perf-compare
+
+# S6-01: old against new, interleaved, on the same runner, with the C# baseline on that runner.
+# The base ref is checked out into a git worktree next to the dispatch ref, so both sides are built
+# from a clean tree. Each round runs base then head, and the raw per-round exports are kept.
+on:
+  workflow_dispatch:
+    inputs:
+      base:
+        description: Ref to compare against
+        required: true
+        default: main
+        type: string
+      filter:
+        description: package-benchmark name filter
+        required: true
+        default: "^(B5|B5a|B6)$"
+        type: string
+      rounds:
+        description: Interleaved rounds per side
+        required: true
+        default: "5"
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  compare:
+    name: ${{ matrix.runner }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: 10.0.x
+      - name: Prepare the base worktree
+        shell: bash
+        env:
+          BASE_REF: ${{ inputs.base }}
+        run: |
+          set -euo pipefail
+          BASE_REF="${BASE_REF:-main}"
+          # A ref name only: no leading dash, so the input can never become a git option.
+          if [[ ! "$BASE_REF" =~ ^[A-Za-z0-9][A-Za-z0-9._/-]*$ ]]; then
+            echo "::error::base '$BASE_REF' is not a plain ref name"
+            exit 1
+          fi
+          git fetch --depth 1 origin "$BASE_REF"
+          base_sha="$(git rev-parse FETCH_HEAD)"
+          echo "head ref $GITHUB_REF $(git rev-parse HEAD)"
+          echo "base ref $BASE_REF $base_sha"
+          # The directory name is the path dependency's package identity, so it must be the
+          # repository name (see CONTRIBUTING.md).
+          git worktree add "$RUNNER_TEMP/nepdate-swift" "$base_sha"
+          echo "BASE_SHA=$base_sha" >> "$GITHUB_ENV"
+      - name: Machine and toolchains
+        shell: bash
+        env:
+          RUNNER: ${{ matrix.runner }}
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          {
+            echo "runner=$RUNNER"
+            echo "date=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            uname -a
+            if [ "$RUNNER_OS" = "macOS" ]; then
+              sysctl -n machdep.cpu.brand_string
+              echo "cpus=$(sysctl -n hw.ncpu)"
+              sw_vers
+            else
+              lscpu | grep -E 'Model name|^CPU\(s\)'
+              nproc
+            fi
+            swift --version
+            dotnet --version
+          } | tee results/machine.txt
+      - name: Interleaved base and head
+        shell: bash
+        env:
+          FILTER: ${{ inputs.filter }}
+          ROUNDS: ${{ inputs.rounds }}
+        run: |
+          set -euo pipefail
+          FILTER="${FILTER:-^(B5|B5a|B6)$}"
+          ROUNDS="${ROUNDS:-5}"
+          if [[ ! "$ROUNDS" =~ ^[1-9][0-9]?$ ]]; then
+            echo "::error::rounds '$ROUNDS' must be 1 to 99"
+            exit 1
+          fi
+          for round in $(seq 1 "$ROUNDS"); do
+            echo "round $round: base"
+            swift package --package-path "$RUNNER_TEMP/nepdate-swift/Benchmarks" \
+              --allow-writing-to-package-directory \
+              --allow-writing-to-directory "$GITHUB_WORKSPACE/results" \
+              benchmark --no-progress --target NepDateBenchmarks --filter "$FILTER" \
+              --format histogramPercentiles --path "$GITHUB_WORKSPACE/results/base/$round"
+            echo "round $round: head"
+            swift package --package-path Benchmarks \
+              --allow-writing-to-package-directory \
+              --allow-writing-to-directory "$GITHUB_WORKSPACE/results" \
+              benchmark --no-progress --target NepDateBenchmarks --filter "$FILTER" \
+              --format histogramPercentiles --path "$GITHUB_WORKSPACE/results/head/$round"
+          done
+      - name: C# baseline on the same runner
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet run -c Release -f net10.0 --project Benchmarks/Vendor/dotnet-bench -- \
+            --filter "*" --artifacts "$GITHUB_WORKSPACE/results/csharp"
+      - name: B5 allocation profile (Linux)
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          set -uo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq valgrind
+          swift build -c release --package-path Benchmarks --product b5-profile
+          bin="$(swift build -c release --package-path Benchmarks --show-bin-path)/b5-profile"
+          "$bin" 10 > results/b5-warmup.txt
+          if valgrind --tool=memcheck --trace-malloc=yes --num-callers=24 \
+            --log-file=results/b5-memcheck.log "$bin" 1000 > results/b5-run.txt 2>&1; then
+            echo "valgrind memcheck ok"
+          else
+            echo "valgrind memcheck failed, see the log"
+          fi
+          # The malloc sizes come from memcheck; the call stacks come from massif.
+          valgrind --tool=massif --massif-out-file=results/b5.massif --detailed-freq=1 \
+            --num-callers=24 "$bin" 200 > results/b5-massif-run.txt 2>&1 || true
+          ms_print results/b5.massif > results/b5-massif.txt || true
+          grep -E '^--[0-9]+--' results/b5-memcheck.log | sed 's/^--[0-9]*-- //' \
+            | sort | uniq -c | sort -rn | head -n 10 || true
+          head -n 120 results/b5-massif.txt || true
+      - name: Aggregate the rounds
+        shell: bash
+        run: |
+          set -euo pipefail
+          csv="$(find results/csharp -name '*-report.csv' | head -n 1)"
+          python3 Benchmarks/scripts/ab.py \
+            --base results/base --head results/head --csharp "$csv" | tee results/ab.md
+          cat results/ab.md >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: perf-compare-${{ matrix.runner }}
+          path: results
+          if-no-files-found: warn

@@ -1,0 +1,62 @@
+name: perf-size
+
+# S6-04: build the three Examples binaries, strip them, and record the Mach-O size breakdown.
+# Raw tool output is kept so the parser can be checked against the real format.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  size:
+    runs-on: macos-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Base worktree
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --depth 1 origin main
+          base_sha="$(git rev-parse FETCH_HEAD)"
+          echo "base $base_sha"
+          echo "head $(git rev-parse HEAD)"
+          git worktree add "$RUNNER_TEMP/nepdate-swift" "$base_sha"
+      - name: Build, strip and measure
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p results/unstripped results/base
+          # The base ref, for the old-against-new size of the parser change.
+          swift build -c release --package-path "$RUNNER_TEMP/nepdate-swift/Examples"
+          base_bin="$(swift build -c release --package-path "$RUNNER_TEMP/nepdate-swift/Examples" --show-bin-path)"
+          for name in baseline core-only with-patro; do
+            strip "$base_bin/$name"
+            echo "base $name $(stat -f%z "$base_bin/$name")" | tee -a results/base-sizes.txt
+          done
+          swift build -c release --package-path Examples
+          bin="$(swift build -c release --package-path Examples --show-bin-path)"
+          for name in baseline core-only with-patro; do
+            cp "$bin/$name" "results/unstripped/$name"
+            strip "$bin/$name"
+            echo "head $name $(stat -f%z "$bin/$name")" | tee -a results/base-sizes.txt
+            size -m "$bin/$name" > "results/size-$name.txt" 2>&1 || true
+            nm -n -U "results/unstripped/$name" > "results/nm-$name.txt" 2>&1 || true
+          done
+          otool -l "$bin/with-patro" > results/otool-patro.txt 2>&1 || true
+          python3 Benchmarks/scripts/size-breakdown.py \
+            --baseline "$bin/baseline" --core-only "$bin/core-only" --with-patro "$bin/with-patro" \
+            --unstripped-baseline results/unstripped/baseline \
+            --unstripped-core results/unstripped/core-only \
+            --unstripped-patro results/unstripped/with-patro \
+            | tee results/size-breakdown.md || true
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: perf-size
+          path: results
+          if-no-files-found: warn

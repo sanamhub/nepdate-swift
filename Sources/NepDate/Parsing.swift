@@ -72,6 +72,74 @@ extension NepaliDate {
   @inlinable
   public static func parse(_ string: some StringProtocol) throws(NepDateError) -> NepaliDate {
     let utf8 = string.utf8
+    if let date = try parseCanonical(utf8) { return date }
+    return try parseSlow(utf8)
+  }
+
+  /// Parses the canonical shape `YYYY?MM?DD`: exactly 10 ASCII bytes, digits at 0 to 3, 5 to 6 and
+  /// 8 to 9, and a strict separator at 4 and 7.
+  ///
+  /// Returns `nil` when the shape does not match, and `parse` then runs `parseSlow`. The fields go
+  /// through ``init(year:month:day:)``, so the range, month and day checks and their error order
+  /// are the ones the loop uses.
+  @inlinable
+  static func parseCanonical<Bytes: Collection>(
+    _ utf8: Bytes
+  ) throws(NepDateError) -> NepaliDate? where Bytes.Element == UInt8 {
+    // Ten index steps and one end check: a long input costs ten steps, not a scan of the whole
+    // string, and only a 10-byte input can match.
+    let start = utf8.startIndex
+    guard let end = utf8.index(start, offsetBy: 10, limitedBy: utf8.endIndex),
+      end == utf8.endIndex
+    else { return nil }
+
+    var i = start
+    let b0 = utf8[i]
+    i = utf8.index(after: i)
+    let b1 = utf8[i]
+    i = utf8.index(after: i)
+    let b2 = utf8[i]
+    i = utf8.index(after: i)
+    let b3 = utf8[i]
+    i = utf8.index(after: i)
+    let b4 = utf8[i]
+    i = utf8.index(after: i)
+    let b5 = utf8[i]
+    i = utf8.index(after: i)
+    let b6 = utf8[i]
+    i = utf8.index(after: i)
+    let b7 = utf8[i]
+    i = utf8.index(after: i)
+    let b8 = utf8[i]
+    i = utf8.index(after: i)
+    let b9 = utf8[i]
+
+    guard isStrictSeparatorByte(b4) else { return nil }
+    guard isStrictSeparatorByte(b7) else { return nil }
+    guard isASCIIDigitByte(b0) else { return nil }
+    guard isASCIIDigitByte(b1) else { return nil }
+    guard isASCIIDigitByte(b2) else { return nil }
+    guard isASCIIDigitByte(b3) else { return nil }
+    guard isASCIIDigitByte(b5) else { return nil }
+    guard isASCIIDigitByte(b6) else { return nil }
+    guard isASCIIDigitByte(b8) else { return nil }
+    guard isASCIIDigitByte(b9) else { return nil }
+
+    var year = Int(b0 - 0x30) * 1000
+    year += Int(b1 - 0x30) * 100
+    year += Int(b2 - 0x30) * 10
+    year += Int(b3 - 0x30)
+    let month = Int(b5 - 0x30) * 10 + Int(b6 - 0x30)
+    let day = Int(b8 - 0x30) * 10 + Int(b9 - 0x30)
+    return try NepaliDate(year: year, month: month, day: day)
+  }
+
+  /// The general strict scanner: any strict separator, one to four digits per group, ASCII or
+  /// Devanagari digits. It is the reference the fast path is tested against.
+  @inlinable
+  static func parseSlow<Bytes: Collection>(
+    _ utf8: Bytes
+  ) throws(NepDateError) -> NepaliDate where Bytes.Element == UInt8 {
     var fields = (0, 0, 0)
     var group = 0
     var digits = 0
@@ -243,6 +311,20 @@ func storeField(_ value: Int, at group: Int, in fields: inout (Int, Int, Int)) {
   case 0: fields.0 = value
   case 1: fields.1 = value
   default: fields.2 = value
+  }
+}
+
+/// Whether `byte` is an ASCII digit, `0` to `9`.
+@inlinable
+func isASCIIDigitByte(_ byte: UInt8) -> Bool { byte >= 0x30 && byte <= 0x39 }
+
+/// Whether `byte` is one of the strict separators `- / . _ \ space |`. The danda `।` is three
+/// bytes, so it can never appear in the 10-byte canonical shape.
+@inlinable
+func isStrictSeparatorByte(_ byte: UInt8) -> Bool {
+  switch byte {
+  case 0x2D, 0x2F, 0x2E, 0x5F, 0x5C, 0x20, 0x7C: return true
+  default: return false
   }
 }
 

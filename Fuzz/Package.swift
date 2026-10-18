@@ -3,8 +3,9 @@ import PackageDescription
 
 // libFuzzer targets for the parsers and the pattern formatter (ADR-0004), Linux only. Build with
 //   swift build -c debug --package-path Fuzz -Xswiftc -sanitize=fuzzer,address \
-//     -Xswiftc -parse-as-library
-// libFuzzer supplies `main`; each target exports `LLVMFuzzerTestOneInput`.
+//     -Xswiftc -parse-as-library -Xswiftc -enable-testing
+// libFuzzer supplies `main`; each target exports `LLVMFuzzerTestOneInput`. `-enable-testing` is
+// needed by FuzzParseCanonical, which compares the public parser with the internal `parseSlow`.
 let package = Package(
   name: "Fuzz",
   dependencies: [.package(path: "..")],
@@ -14,6 +15,9 @@ let package = Package(
     .executableTarget(
       name: "FuzzParseLenient", dependencies: [.product(name: "NepDate", package: "nepdate-swift")]
     ),
+    .executableTarget(
+      name: "FuzzParseCanonical",
+      dependencies: [.product(name: "NepDate", package: "nepdate-swift")]),
     .executableTarget(
       name: "FuzzFormat", dependencies: [.product(name: "NepDate", package: "nepdate-swift")]),
   ],
