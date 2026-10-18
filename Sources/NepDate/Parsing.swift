@@ -86,51 +86,30 @@ extension NepaliDate {
   static func parseCanonical<Bytes: Collection>(
     _ utf8: Bytes
   ) throws(NepDateError) -> NepaliDate? where Bytes.Element == UInt8 {
-    // Ten index steps and one end check: a long input costs ten steps, not a scan of the whole
-    // string, and only a 10-byte input can match.
-    let start = utf8.startIndex
-    guard let end = utf8.index(start, offsetBy: 10, limitedBy: utf8.endIndex),
-      end == utf8.endIndex
-    else { return nil }
-
-    var i = start
-    let b0 = utf8[i]
-    i = utf8.index(after: i)
-    let b1 = utf8[i]
-    i = utf8.index(after: i)
-    let b2 = utf8[i]
-    i = utf8.index(after: i)
-    let b3 = utf8[i]
-    i = utf8.index(after: i)
-    let b4 = utf8[i]
-    i = utf8.index(after: i)
-    let b5 = utf8[i]
-    i = utf8.index(after: i)
-    let b6 = utf8[i]
-    i = utf8.index(after: i)
-    let b7 = utf8[i]
-    i = utf8.index(after: i)
-    let b8 = utf8[i]
-    i = utf8.index(after: i)
-    let b9 = utf8[i]
-
-    guard isStrictSeparatorByte(b4) else { return nil }
-    guard isStrictSeparatorByte(b7) else { return nil }
-    guard isASCIIDigitByte(b0) else { return nil }
-    guard isASCIIDigitByte(b1) else { return nil }
-    guard isASCIIDigitByte(b2) else { return nil }
-    guard isASCIIDigitByte(b3) else { return nil }
-    guard isASCIIDigitByte(b5) else { return nil }
-    guard isASCIIDigitByte(b6) else { return nil }
-    guard isASCIIDigitByte(b8) else { return nil }
-    guard isASCIIDigitByte(b9) else { return nil }
-
-    var year = Int(b0 - 0x30) * 1000
-    year += Int(b1 - 0x30) * 100
-    year += Int(b2 - 0x30) * 10
-    year += Int(b3 - 0x30)
-    let month = Int(b5 - 0x30) * 10 + Int(b6 - 0x30)
-    let day = Int(b8 - 0x30) * 10 + Int(b9 - 0x30)
+    // One pass with a position counter. The 11th byte ends it, so a long input costs 11 steps and
+    // only a 10-byte input can match.
+    var position = 0
+    var year = 0
+    var month = 0
+    var day = 0
+    for byte in utf8 {
+      guard position < 10 else { return nil }
+      switch position {
+      case 0, 1, 2, 3:
+        guard isASCIIDigitByte(byte) else { return nil }
+        year = year * 10 + Int(byte - 0x30)
+      case 4, 7:
+        guard isStrictSeparatorByte(byte) else { return nil }
+      case 5, 6:
+        guard isASCIIDigitByte(byte) else { return nil }
+        month = month * 10 + Int(byte - 0x30)
+      default:
+        guard isASCIIDigitByte(byte) else { return nil }
+        day = day * 10 + Int(byte - 0x30)
+      }
+      position += 1
+    }
+    guard position == 10 else { return nil }
     return try NepaliDate(year: year, month: month, day: day)
   }
 
