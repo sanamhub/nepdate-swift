@@ -1,8 +1,8 @@
 # ADR-0005: Releases
 
-- Status: Accepted
-- Date: 2026-10-06
-- Deciders: Sanam Pakuwal
+- **Status:** accepted
+- **Date:** 2026-10-06
+- **Approved by:** Sanam
 
 ## Decision
 
@@ -15,7 +15,7 @@
   `## [X.Y.Z]` section for it; SwiftPM has no version field to compare), CI, `environment:
   production` approval, GitHub Release with notes from the changelog. No artefact to publish; the
   Swift Package Index picks up the tag.
-- Register the package on the Swift Package Index once (human task).
+- Register the package on the Swift Package Index once (maintainer task).
 - Never move or delete a published tag. A bad release is fixed by a new patch tag and a changelog
   note.
 - The weekly `shared-sync` PR, once merged, is released as a patch version.
