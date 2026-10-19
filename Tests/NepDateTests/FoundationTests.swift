@@ -4,7 +4,7 @@
 
   @testable import NepDate
 
-  /// 2024-07-30 18:30 UTC, the clock of PORT-PLAN phase 4: BS 2081-04-15 in UTC, 2081-04-16 in
+  /// 2024-07-30 18:30 UTC, the clock the hub PORT-PLAN uses: BS 2081-04-15 in UTC, 2081-04-16 in
   /// Nepal.
   let fixedClock = Date(timeIntervalSince1970: 1_722_364_200)
 
@@ -26,14 +26,14 @@
 
   @Suite("Foundation")
   struct FoundationTests {
-    @Test("S4-04 AC1: today at 2024-07-30 18:30 UTC, real zone database")
+    @Test("today at 2024-07-30 18:30 UTC, real zone database")
     func todayWithZoneDatabase() throws {
       let utcZone = try zone("UTC")
       #expect(NepaliDate.today(in: utcZone, now: fixedClock) == (try bs(2081, 4, 15)))
       #expect(NepaliDate.today(in: nil, now: fixedClock) == (try bs(2081, 4, 16)))
     }
 
-    @Test("S4-04 AC1: today at 2024-07-30 18:30 UTC, zone database without Asia/Kathmandu")
+    @Test("today at 2024-07-30 18:30 UTC, zone database without Asia/Kathmandu")
     func todayWithoutNepalZone() throws {
       let utcZone = try zone("UTC")
       let none: (String) -> TimeZone? = { _ in nil }
@@ -43,7 +43,7 @@
       #expect(NepaliDate.nepalOffset(at: fixedClock) { TimeZone(identifier: $0) } == 20_700)
     }
 
-    @Test("S4-04: today(in:) reads the system clock")
+    @Test("today(in:) reads the system clock")
     func todayReadsClock() throws {
       let utcZone = try zone("UTC")
       let before = try NepaliDate(Date(), in: utcZone)
@@ -54,7 +54,7 @@
       #expect(NepaliDate.today() >= (try bs(2083, 1, 1)))
     }
 
-    @Test("S4-04: a clock outside the range gives min or max")
+    @Test("a clock outside the range gives min or max")
     func todayOutsideRange() throws {
       let utcZone = try zone("UTC")
       #expect(NepaliDate.today(in: utcZone, now: utc(1843, 1, 1)) == .min)
@@ -64,7 +64,7 @@
     }
 
     @Test(
-      "S4-04 AC2: date(in:) round-trips every day of 2080 to 2082",
+      "date(in:) round-trips every day of 2080 to 2082",
       arguments: ["Asia/Kathmandu", "America/New_York", "UTC"])
     func roundTrip(_ identifier: String) throws {
       let tz = try zone(identifier)
@@ -82,14 +82,14 @@
       #expect(count == 1096)
     }
 
-    @Test("S4-04 AC3: the first supported day, before 1970")
+    @Test("the first supported day, before 1970")
     func firstDay() throws {
       let date = try NepaliDate(Date(timeIntervalSince1970: -45_920 * 86_400), in: try zone("UTC"))
       #expect(date == .min)
       #expect(date == (try bs(1901, 1, 1)))
     }
 
-    @Test("S4-04: init(_:in:) uses floor division and checks both ends")
+    @Test("init(_:in:) uses floor division and checks both ends")
     func conversionEdges() throws {
       let utcZone = try zone("UTC")
       // One second before 1970-01-01 is 1969-12-31.
@@ -106,7 +106,7 @@
       }
     }
 
-    @Test("S4-04: Nepal's midnight is 18:15 UTC the day before")
+    @Test("Nepal's midnight is 18:15 UTC the day before")
     func nepalMidnight() throws {
       let midnight = try bs(2081, 4, 16).date(in: try zone("Asia/Kathmandu"))
       #expect(midnight == utc(2024, 7, 31, seconds: -20_700))

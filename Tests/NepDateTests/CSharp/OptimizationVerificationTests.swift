@@ -150,7 +150,7 @@ struct OptimizationVerificationTests {
   }
 
   // OptimizationVerificationTests.IsLeapYear_ChecksEnglishYearCorrectly (3 rows): D-12, not
-  // ported; year length comes from NepaliDateRange.year(_:).count (S2-05).
+  // ported; year length comes from NepaliDateRange.year(_:).count.
 
   @Test(
     "OptimizationVerificationTests.Constructor_InvalidYearMonthDay_ThrowsException",
@@ -249,7 +249,7 @@ struct OptimizationVerificationTests {
     #expect(try bs(2080, 12, 1).lastDayOfMonth.days(until: bs(2081, 1, 1)) == 1)
   }
 
-  // MARK: formatting (S3)
+  // MARK: formatting
 
   @Test(
     "OptimizationVerificationTests.ToString_ProducesExactFormat",
@@ -361,7 +361,7 @@ struct OptimizationVerificationTests {
     }
   }
 
-  // MARK: lenient parsing (S3, D-06)
+  // MARK: lenient parsing (D-06)
 
   @Test(
     "OptimizationVerificationTests.SmartDateParser_NepaliDigits_ParseCorrectly",

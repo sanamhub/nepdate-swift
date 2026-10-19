@@ -1,6 +1,6 @@
 import NepDate
 
-// The raw pointer from libFuzzer is the one place unsafe pointers are allowed (AGENTS.md §2).
+// The raw pointer from libFuzzer is the one place unsafe pointers are allowed (CONTRIBUTING.md).
 @_cdecl("LLVMFuzzerTestOneInput")
 public func fuzz(_ data: UnsafePointer<UInt8>, _ size: Int) -> CInt {
   let text = String(decoding: UnsafeBufferPointer(start: data, count: size), as: UTF8.self)

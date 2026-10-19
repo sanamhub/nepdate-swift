@@ -20,7 +20,7 @@ struct CompileTimeTests {
     requireBitwiseCopyable(NepaliDate.self)
   }
 
-  @Test("S1-03 AC2: NepaliDate is 8 bytes, aligned to 4")
+  @Test("NepaliDate is 8 bytes, aligned to 4")
   func layout() {
     #expect(MemoryLayout<NepaliDate>.size == 8)
     #expect(MemoryLayout<NepaliDate>.stride == 8)

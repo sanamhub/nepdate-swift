@@ -6,7 +6,7 @@ import Testing
 
 @testable import NepDate
 
-// D-09 as in NepaliDateRangeTests.swift. The `Current*` rows are D-14 and use `today(in:)` (S4-04).
+// D-09 as in NepaliDateRangeTests.swift. The `Current*` rows are D-14 and use `today(in:)`.
 @Suite("NepaliDateRangeExtendedTests")
 struct NepaliDateRangeExtendedTests {
   @Test("NepaliDateRangeExtendedTests.ForCalendarYear_StartsAtBaishakhOne_EndsAtChaitraEnd")
@@ -23,7 +23,7 @@ struct NepaliDateRangeExtendedTests {
   }
 
   // D-14: C# reads a static Today; this port compares against today(in:). The tests inject the
-  // fixed clock so the result is deterministic (S4-04).
+  // fixed clock so the result is deterministic.
   #if canImport(Foundation)
     @Test("NepaliDateRangeExtendedTests.CurrentMonth_StartIsFirstDayOfCurrentMonth")
     func currentMonthStart() throws {

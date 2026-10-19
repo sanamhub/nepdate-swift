@@ -86,7 +86,7 @@ struct NepaliDateArithmeticEdgeCaseTests {
   // D-02.
 
   // The DateTime rows use init(_:in:), which ignores the time of day and reads the calendar date
-  // in the given zone (S4-04). utc(_:_:_:seconds:) and zone(_:) are shared with FoundationTests.
+  // in the given zone. utc(_:_:_:seconds:) and zone(_:) are shared with FoundationTests.
   #if canImport(Foundation)
     @Test("NepaliDateArithmeticEdgeCaseTests.Constructor_DateTimeWithMidnightTime_IgnoresTime")
     func constructorDateTimeWithMidnightTime() throws {

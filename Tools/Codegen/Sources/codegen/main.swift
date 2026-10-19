@@ -72,7 +72,7 @@ func daysFromCivil(_ year: Int, _ month: Int, _ day: Int) -> Int {
   return era * 146097 + doe - 719468
 }
 
-/// Month lengths per year, in year order, after the checks of S0-02, and the epoch.
+/// Month lengths per year, in year order, checked, and the epoch.
 func loadCalendar() -> CalendarInput {
   let data: Data
   do {
@@ -194,7 +194,7 @@ func calendarSource(_ calendar: CalendarInput, header: String) -> String {
   return out
 }
 
-/// The month names of PARSING §3, in table order, without repeats, after the checks of S3-05.
+/// The month names of PARSING §3, in table order, without repeats, checked.
 func loadMonthWords() -> [(word: String, month: Int)] {
   guard let text = try? String(contentsOfFile: Paths.parsingSpec, encoding: .utf8) else {
     fail("cannot read \(Paths.parsingSpec)")
@@ -320,7 +320,7 @@ func numberRows<C: Collection>(_ values: C) -> String where C.Element == Int {
   return out
 }
 
-/// The patro tables of ADR-0002 §3 from `shared/data/patro/*.json` (S4-01).
+/// The patro tables of ADR-0002 §3 from `shared/data/patro/*.json`.
 func patroSource(_ calendar: CalendarInput, header: String) -> String {
   let monthStart = monthStarts(calendar)
   let first = Paths.coverageFirst

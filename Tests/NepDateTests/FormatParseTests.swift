@@ -43,7 +43,7 @@ func hasShortMonthToken(_ pattern: String) -> Bool {
 
 @Suite("Formatting")
 struct FormattingTests {
-  @Test("S3-01 AC1: month and weekday names")
+  @Test("month and weekday names")
   func names() {
     #expect(Month.ashad.shortName() == "Asa")
     #expect(Month.ashoj.shortName() == "Aso")
@@ -77,7 +77,7 @@ struct FormattingTests {
       ])
   }
 
-  @Test("S3-01 AC2: nepaliDigits")
+  @Test("nepaliDigits")
   func digits() {
     #expect(nepaliDigits(2081) == "२०८१")
     #expect(nepaliDigits(5, minWidth: 2) == "०५")
@@ -87,7 +87,7 @@ struct FormattingTests {
     #expect(nepaliDigits(Int.min).count == 20)
   }
 
-  @Test("S3-02 AC: csharp-golden/dates.tsv text columns")
+  @Test("csharp-golden/dates.tsv text columns")
   func goldenText() throws {
     let file = try VectorFile("csharp-golden/dates.tsv", separator: "\t")
     #expect(file.rows.count == 1018)
@@ -112,7 +112,7 @@ struct FormattingTests {
     #expect(log.count == 0, "\(log.summary)")
   }
 
-  @Test("S3-02: FORMATTING §3 and §4 examples")
+  @Test("FORMATTING §3 and §4 examples")
   func formattingExamples() throws {
     let bhadra = try bs(2080, 5, 15)
     #expect(bhadra.short(separator: .dash) == "2080-05-15")
@@ -130,7 +130,7 @@ struct FormattingTests {
     #expect(jestha.long(weekday: true, year: false, pad: false, lang: .nepali) == "शुक्रवार, जेठ ६")
   }
 
-  @Test("S3-03 AC1: csharp-golden/format-pattern.tsv")
+  @Test("csharp-golden/format-pattern.tsv")
   func goldenPatterns() throws {
     let file = try VectorFile("csharp-golden/format-pattern.tsv", separator: "\t")
     #expect(file.rows.count == 451)
@@ -162,7 +162,7 @@ struct FormattingTests {
     #expect(log.count == 0, "\(log.summary)")
   }
 
-  @Test("S3-03 AC2: FORMATTING §5 examples")
+  @Test("FORMATTING §5 examples")
   func patternExamples() throws {
     let date = try bs(2081, 4, 15)
     #expect(date.format("yyyy-MM-dd") == "2081-04-15")
@@ -189,7 +189,7 @@ struct FormattingTests {
 
 @Suite("Parsing")
 struct ParsingTests {
-  @Test("S3-04 AC and S3-05 AC1: parse.tsv, strict and lenient")
+  @Test("parse.tsv, strict and lenient")
   func parseVectors() throws {
     let file = try VectorFile("parse.tsv", separator: "\t")
     #expect(file.rows.count == 67)
@@ -216,7 +216,7 @@ struct ParsingTests {
     #expect(log.count == 0, "\(log.summary)")
   }
 
-  @Test("S3-05 AC2: month-name forms and two-digit years")
+  @Test("month-name forms and two-digit years")
   func lenientExamples() throws {
     let expected = try bs(2080, 4, 15)
     #expect(try NepaliDate.parseLenient("15 Shrawan 2080") == expected)
@@ -228,7 +228,7 @@ struct ParsingTests {
   /// Every Devanagari name in the closed list is the same in NFC and NFD (the generator checks
   /// it), so an NFD input is byte-identical to the NFC one and matches. A canonically equivalent
   /// spelling in neither form would not match; no name in the list has such a spelling.
-  @Test("S3-05: Devanagari month names in NFD")
+  @Test("Devanagari month names in NFD")
   func nfdInput() throws {
     for (text, month) in [("15 साउन 2080", 4), ("15 श्रावण 2080", 4), ("1 मार्गशीर्ष 2080", 8)] {
       let nfd = text.decomposedStringWithCanonicalMapping
@@ -237,7 +237,7 @@ struct ParsingTests {
     }
   }
 
-  @Test("S3-04: a Substring parses in place")
+  @Test("a Substring parses in place")
   func substring() throws {
     let text = "date: 2081/04/15!"
     let start = text.index(text.startIndex, offsetBy: 6)
@@ -246,7 +246,7 @@ struct ParsingTests {
     #expect(try NepaliDate.parseLenient(text[start..<end]) == bs(2081, 4, 15))
   }
 
-  @Test("S3-06 AC1 and AC2: Codable as a single string")
+  @Test("Codable as a single string")
   func codable() throws {
     let date = try bs(2081, 4, 15)
     let data = try JSONEncoder().encode([date])
@@ -275,7 +275,7 @@ struct ParsingTests {
     }
   }
 
-  @Test("S3-06 AC3: description round-trips through init?(_:) for every golden date")
+  @Test("description round-trips through init?(_:) for every golden date")
   func losslessRoundTrip() throws {
     let file = try VectorFile("csharp-golden/dates.tsv", separator: "\t")
     let dates = try file.rows.compactMap { try goldenDate($0.fields[0]) }

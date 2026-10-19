@@ -1,4 +1,4 @@
-// S6-02: the canonical fast path must not change any answer and must not decline a canonical shape.
+// The canonical fast path must not change any answer and must not decline a canonical shape.
 // `parseSlow` and `parseCanonical` are internal, so this target builds with
 // `-Xswiftc -enable-testing` (see the fuzz job and the note in Fuzz/Package.swift).
 
@@ -35,7 +35,7 @@ private func canonicalShape(_ text: String) -> Bool {
   return true
 }
 
-// The raw pointer from libFuzzer is the one place unsafe pointers are allowed (AGENTS.md §2).
+// The raw pointer from libFuzzer is the one place unsafe pointers are allowed (CONTRIBUTING.md).
 @_cdecl("LLVMFuzzerTestOneInput")
 public func fuzz(_ data: UnsafePointer<UInt8>, _ size: Int) -> CInt {
   let text = String(decoding: UnsafeBufferPointer(start: data, count: size), as: UTF8.self)

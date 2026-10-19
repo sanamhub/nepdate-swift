@@ -1,7 +1,7 @@
 // swift-tools-version: 6.0
 import PackageDescription
 
-// Three small executables for ADR-0004 gate 6, the patro-free core check. A path dependency's
+// Three small executables for the patro-free core check and the size targets (ADR-0004, ADR-0006). A path dependency's
 // package identity is its directory name, so the checkout folder must be named `nepdate-swift`
 // (see CONTRIBUTING.md) and the products are referenced by that name.
 let package = Package(

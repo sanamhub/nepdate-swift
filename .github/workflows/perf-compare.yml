@@ -1,6 +1,6 @@
 name: perf-compare
 
-# S6-01: old against new, interleaved, on the same runner, with the C# baseline on that runner.
+# Old against new, interleaved, on the same runner, with the C# baseline on that runner.
 # The base ref is checked out into a git worktree next to the dispatch ref, so both sides are built
 # from a clean tree. Each round runs base then head, and the raw per-round exports are kept.
 on:

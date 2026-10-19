@@ -30,7 +30,7 @@ public struct NepaliDate: Sendable, BitwiseCopyable, Hashable, Comparable {
   ///
   /// One bucket load gives the month of the bucket's first day. A 16-day bucket is shorter than
   /// any month, so the date is in that month or the next (ADR-0002 §2).
-  /// `package` so `NepDatePatro` can build dates from its tables (S4-01).
+  /// `package` so `NepDatePatro` can build dates from its tables.
   @inlinable
   package init(serial: Int32) {
     let monthStart = CalendarData.monthStart
