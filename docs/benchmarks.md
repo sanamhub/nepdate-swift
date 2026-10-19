@@ -2,7 +2,7 @@
 
 B1 to B8 of [`shared/spec/BENCHMARK.md`](../shared/spec/BENCHMARK.md), with B1 and B2 for every
 Swift library in [`competitors.md`](competitors.md) that has a conversion API. The numbers come from
-the `bench-full` workflow, run 39062202496 on 2026-10-17.
+the `bench-full` workflow, run on 2026-10-17.
 
 ## Why the runners and not the reference machine
 
@@ -27,7 +27,6 @@ an earlier run of this workflow and at 1.33 on this one. The earlier run also me
 | Xcode | not used | 26.6 (17F113) |
 | .NET | SDK 10.0.402, runtime 10.0.13 | SDK 10.0.402, runtime 10.0.13 |
 | Run date (UTC) | 2026-10-17T19:22:59Z | 2026-10-17T19:23:08Z |
-| Job | [ubuntu job](https://github.com/sanamhub/nepdate-swift/actions/runs/39062202496/job/117482288230) | [macos job](https://github.com/sanamhub/nepdate-swift/actions/runs/39062202496/job/117482288124) |
 
 The reference-machine C# numbers in the tables below were measured on 2026-10-09 with .NET 10 on a
 12th Gen Intel Core i5-12500H (4 performance + 8 efficiency cores), Windows 11, Ultimate Performance
@@ -97,10 +96,9 @@ the last decile includes scheduler jitter that p50 does not.
 
 The B6 row in the tables above is from the previous full run. The strict parser gained a
 canonical-shape fast path: exactly 10 ASCII bytes with digits at 0 to 3, 5 to 6 and 8 to 9 and a
-strict separator at 4 and 7, with the general loop as the fallback. This run measures `main`
-(c061506, old) and the change (new) in one job, alternating old and new five times each, with the
-C# baseline on the same runner:
-https://github.com/sanamhub/nepdate-swift/actions/runs/39070430969
+strict separator at 4 and 7, with the general loop as the fallback. One `perf-compare` run on 2026-10-17
+measured the old and new parser in one job, alternating five times each, with the C# baseline on
+the same runner.
 
 | Runner and load | old p50 ns/op | new p50 ns/op | change | old p90 | new p90 | C# same runner ns/op | old/C# | new/C# |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
@@ -155,15 +153,13 @@ are ADR-0006, which replaces ADR-0002 §7's two size rows; the limits are in
 | with-patro | 277,352 | 226,032 | less than 250 KB (256,000 B) | pass |
 
 The patro product adds 117,872 bytes over `core-only`: 65,872 of bilingual name literals, 14,760 of
-day tables and 36,024 of the name switch. S5 measured 142,552 and 276,952 against the old 100 KB and
-200 KB targets; the parser fast path added 16,928 bytes to `core-only` and almost nothing to
-`with-patro`, which dead-strips it. The section and symbol breakdown, the two rejected options and
-the one data year of headroom are in [`plan/S6-perf.md`](plan/S6-perf.md) and
+day tables and 36,024 of the name switch. Before the parser fast path the binaries were 142,552 and
+276,952 bytes, against the old 100 KB and 200 KB targets; the fast path added 16,928 bytes to `core-only` and almost nothing to
+`with-patro`, which dead-strips it. The two rejected options and the one data year of headroom are in
 [`adr/0006-binary-size-targets.md`](adr/0006-binary-size-targets.md).
 
-S7 tried a one-pass parser that met the size target (`core-only` 143,000, delta 91,680) but cost
-46 % of B6 on ubuntu and 28 % on macOS, so it was reverted; see
-[`plan/S7-size.md`](plan/S7-size.md).
+A one-pass parser met the size target (`core-only` 143,000, delta 91,680) but cost 46 % of B6 on
+ubuntu and 28 % on macOS, so it was reverted.
 
 ## Targets
 

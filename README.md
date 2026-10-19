@@ -24,7 +24,18 @@ Foundation's `Calendar.Identifier.vikram` (iOS 26+) is the Indian lunisolar Vikr
 Nepal's solar Bikram Sambat; its months don't match. Apple has no Nepali calendar
 ([docs/competitors.md](docs/competitors.md)). Use this package for Nepali dates.
 
-**Status:** 0.1.0 prepared. The maintainer tags the release after review (ADR-0005).
+> **Status:** not released yet. The API in [docs/API.md](docs/API.md) is complete and tested; 0.1.0
+> is the first tag.
+
+## Install
+
+Add the package to `Package.swift` once 0.1.0 is tagged:
+
+```swift
+.package(url: "https://github.com/sanamhub/nepdate-swift", from: "0.1.0")
+```
+
+Then depend on `NepDate`, or on `NepDatePatro` as well for tithi, holidays and events.
 
 ## Quick start
 
@@ -33,9 +44,6 @@ Core conversion, formatting and parsing, with no patro data linked:
 ```swift
 import NepDate
 
-// Builds, formats and parses one date with only the core product. The release binary must not
-// contain the string `World Day Against Human Trafficking` (ADR-0004 gate 6), which proves no
-// patro data is linked.
 do {
   let date = try NepaliDate(year: 2081, month: 4, day: 15)
   print(date.format("s"))
@@ -52,8 +60,6 @@ The same date with the patro product, which links the tithi, holiday and event t
 import NepDate
 import NepDatePatro
 
-// Prints the patro info of 2081-01-01. Linking NepDatePatro pulls the whole name table into the
-// release binary, so gate 6 finds `World Day Against Human Trafficking` in it.
 let date = (try? NepaliDate(year: 2081, month: 1, day: 1)) ?? .min
 let info = date.calendarInfo
 print(info.tithi?.english ?? "no tithi")
@@ -62,34 +68,19 @@ for event in info.events {
 }
 ```
 
-Both blocks are the contents of `Examples/Sources/core-only/main.swift` and
-`Examples/Sources/with-patro/main.swift`, byte for byte; `readme-check` fails the build if they drift.
+Both blocks are the `Examples` programs, so CI builds and runs them.
 
-## Where to start
+## Documentation
 
-| You are | Read |
-|---|---|
-| an AI agent implementing a phase | [AGENTS.md](AGENTS.md) → [docs/plan/00-ROADMAP.md](docs/plan/00-ROADMAP.md) |
-| reviewing the API | [docs/API.md](docs/API.md) |
-| comparing with other Swift libraries | [docs/competitors.md](docs/competitors.md) |
-| checking the benchmark numbers | [docs/benchmarks.md](docs/benchmarks.md) |
-| wondering "why is it like this?" | [docs/adr/README.md](docs/adr/README.md) |
-| looking for the algorithm or data | [shared/spec/README.md](shared/spec/README.md) (changes go to the hub) |
+- [docs/API.md](docs/API.md): every public symbol.
+- [docs/benchmarks.md](docs/benchmarks.md): numbers against the other Swift libraries and C# NepDate.
+- [docs/competitors.md](docs/competitors.md): the other Swift libraries.
+- [docs/adr/](docs/adr/README.md): why it is built this way.
+- [shared/spec/](shared/spec/README.md): the algorithm and the data, shared by every port.
 
-## Layout
-
-```
-shared/                  hub copy: data/, spec/, VERSION
-Package.swift            products NepDate, NepDatePatro
-Sources/NepDate/         core                         (phase S0)
-Sources/NepDatePatro/    tithi, holidays, events      (phase S4)
-Tests/                   swift-testing, shared vectors
-Tools/Codegen/           separate package: generates the Swift tables from shared/data
-Benchmarks/              separate package: package-benchmark B1 to B8, competitors, malloc counts
-Fuzz/                    separate package: libFuzzer targets for the parsers, Linux (phase S3)
-Examples/                separate package: core-only and with-patro executables (phase S4)
-docs/                    API.md, competitors.md, adr/, plan/, runbooks/
-```
+The repository holds four packages: the library at the root, and `Tools/Codegen` (generates the
+Swift tables from `shared/data`), `Benchmarks`, `Fuzz` and `Examples` beside it, so the library
+products have no dependencies.
 
 ## License
 

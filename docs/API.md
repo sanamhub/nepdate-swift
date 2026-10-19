@@ -1,7 +1,8 @@
-# `NepDate` (Swift): public API contract (v0.1)
+# Public API
 
-The complete public surface for v0.1. Implement exactly this; a new public symbol needs this file
-changed in the same PR, approved by the human. Behaviour: `shared/spec/`. Conventions: ADR-0003.
+The complete public surface of `NepDate` and `NepDatePatro`. A new public symbol changes this file
+in the same pull request. Behaviour is specified in `shared/spec/`; naming and errors follow
+ADR-0003.
 Every type is a value type and `Sendable`.
 
 ```swift
@@ -140,14 +141,3 @@ Notes:
   bytes; the `append…(to:)` forms allocate only when the caller's buffer must grow.
 - `NepaliDateRange.contains(_:)` and `count` are written by hand from the serials; the default
   `Sequence.contains` is O(n).
-
-## Changes on 2026-10-07 (need the human's approval with the plan)
-
-| Change | Why |
-|---|---|
-| Module `NepDateEvents` renamed `NepDatePatro`; `CalendarEvents` renamed `Patro` | hub ADR-0004 |
-| `CalendarInfo.events` is `PatroEvents` instead of `[Named]` | no array allocation per day (ADR-0002 §3); `Array(info.events)` gives the old shape |
-| `Named.nepali` and `Named.english` are computed `var`s, not stored `let`s | `Named` holds a 2-byte id; reading code compiles unchanged |
-| `NepaliDate` declares `BitwiseCopyable` | compile-time proof of a trivial 8-byte value (ADR-0002 §1) |
-| `parse` and `parseLenient` take `some StringProtocol` | parse a `Substring` without copying; `String` callers compile unchanged |
-| `appendShort(to:)`, `appendLong(to:)`, `appendFormat(_:to:)` added | format into a reused buffer with no allocation (ADR-0002 §4) |
