@@ -5,7 +5,7 @@ import Testing
 
 @Suite("Patro")
 struct PatroTests {
-  @Test("S4-01 AC1: generated table sizes match PATRO §3")
+  @Test("generated table sizes match PATRO §3")
   func tableSizes() {
     #expect(PatroData.dayInfo.count == 2793)
     #expect(PatroData.dayEventStart.count == 2794)
@@ -18,7 +18,7 @@ struct PatroTests {
     #expect(PatroData.dayInfo.allSatisfy { $0 & 0x40 == 0 })
   }
 
-  @Test("S4-01 AC1: 753 names, of which ids 0 to 31 are the 32 tithi names")
+  @Test("753 names, of which ids 0 to 31 are the 32 tithi names")
   func names() {
     for id in UInt16(0)..<753 {
       let name = PatroData.name(id)
@@ -59,7 +59,7 @@ struct PatroTests {
     Anchor(date: (2090, 1, 1), tithi: nil, holiday: false, events: []),
   ]
 
-  @Test("S4-02 AC1: PATRO §4 anchors", arguments: anchors)
+  @Test("PATRO §4 anchors", arguments: anchors)
   func anchor(_ anchor: Anchor) throws {
     let info = try bs(anchor.date.0, anchor.date.1, anchor.date.2).calendarInfo
     #expect(info.tithi?.english == anchor.tithi)
@@ -67,14 +67,14 @@ struct PatroTests {
     #expect(info.events.map { $0.english } == anchor.events)
   }
 
-  @Test("S4-02 AC2: coverage is 2077-01-01 to 2084-08-20")
+  @Test("coverage is 2077-01-01 to 2084-08-20")
   func coverage() throws {
     #expect(Patro.coverage.lowerBound == (try bs(2077, 1, 1)))
     #expect(Patro.coverage.upperBound == (try bs(2084, 8, 20)))
     #expect(Patro.coverage.count == 2793)
   }
 
-  @Test("S4-02 AC3: 294 public holidays in ascending order")
+  @Test("294 public holidays in ascending order")
   func publicHolidays() {
     let holidays = Array(Patro.publicHolidays)
     #expect(holidays.count == 294)
@@ -82,7 +82,7 @@ struct PatroTests {
     #expect(holidays.allSatisfy { $0.calendarInfo.isPublicHoliday })
   }
 
-  @Test("S4-02: a date outside the data has no tithi, no holiday and no events")
+  @Test("a date outside the data has no tithi, no holiday and no events")
   func outside() {
     for date in [NepaliDate.min, .max] {
       let info = date.calendarInfo
@@ -90,7 +90,7 @@ struct PatroTests {
     }
   }
 
-  @Test("S4-02: Named and PatroEvents read the generated names")
+  @Test("Named and PatroEvents read the generated names")
   func namedAndEvents() throws {
     let info = try bs(2081, 1, 1).calendarInfo
     let tithi = try #require(info.tithi)
@@ -103,7 +103,7 @@ struct PatroTests {
     #expect(Array(info.events).count == 3)
   }
 
-  @Test("S4-02: PatroEvents equality and hashing compare names in order")
+  @Test("PatroEvents equality and hashing compare names in order")
   func eventsEquality() throws {
     let a = try bs(2081, 1, 1).calendarInfo
     #expect(a == (try bs(2081, 1, 1)).calendarInfo)
@@ -116,7 +116,7 @@ struct PatroTests {
     #expect(none1.hashValue == none2.hashValue)
   }
 
-  @Test("S4-05: every covered day equals a reference built from the JSON files")
+  @Test("every covered day equals a reference built from the JSON files")
   func everyDayMatchesJSON() throws {
     let reference = try referenceDays()
     var checked = 0

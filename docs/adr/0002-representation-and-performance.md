@@ -1,9 +1,9 @@
 # ADR-0002: Representation, tables and performance
 
-- Status: Accepted
-- Date: 2026-10-07 (rewritten; replaces the 2026-10-06 version, which stored a 4-byte y/m/d and
+- **Status:** accepted
+- **Date:** 2026-10-07 (rewritten; replaces the 2026-10-06 version, which stored a 4-byte y/m/d and
   binary-searched a year table)
-- Deciders: Sanam Pakuwal
+- **Approved by:** Sanam
 
 ## Context
 
@@ -111,8 +111,8 @@ Generated into `Sources/NepDatePatro/Patro.generated.swift`, `enum PatroData`. C
 PATRO §3 suggests sorted serials and binary search for the sparse parts, and allows dense per-day
 tables when a benchmark shows they are faster at an acceptable size (hub spec as of 2026-10-08;
 `shared/` gets it at the next sync). The dense layout is smaller here (14.4 KB against about 19 KB
-for sorted serials plus offsets) and needs no search; S4-05 benchmarks it against a binary-search
-variant to give the evidence PATRO §3 asks for.
+for sorted serials plus offsets) and needs no search; a benchmark against a binary-search variant
+gives the evidence PATRO §3 asks for.
 Names come from a `switch` of string literals, not a `[String]` array: an array of strings is
 built on first access, a switch case is two constants in code and needs no initialisation, no
 retain and no allocation. `publicHolidays` scans `dayInfo` for bit 7.
@@ -133,7 +133,7 @@ two `UInt16` offsets. `Array(info.events)` gives a plain array when a caller wan
 - No `Character` iteration in hot paths (grapheme breaking is slow); work on `utf8`.
 - `OutputSpan` (SE-0485) and `String(unsafeUninitializedCapacity:)` were considered. SE-0485
   needs a new standard library and runtime (OS 26 on Apple) and lists its `String` methods as
-  still pending; the second needs unsafe pointers (AGENTS.md §2).
+  still pending; the second needs unsafe pointers, which `Sources/` does not use.
 
 ### 5. Parsing: over `utf8`, no copies
 
@@ -177,9 +177,8 @@ noisy to be more than an order of magnitude. The C++ port's experiment with a mo
 and 32-day block index (its ADR-0002 §8, same machine) measured B1 4.6 to 9.2 ns and B2 4.7 to 6.1 ns
 without bounds checks; Swift adds one bounds check per load and, unless the tables become static
 data, a `swift_once` guard per access (a load and a predictable branch), so 5 to 15 ns stays the
-estimate. Measurement tasks: S1-07 (the `Benchmarks` package with
-malloc thresholds on every PR, static initialisation and first access), S5-02 (B1 to B8,
-competitors, C# ratio) and S5-03 (size).
+estimate. The `Benchmarks` package measures it: malloc thresholds on every PR, static
+initialisation and first access, B1 to B8 against the competitors and C#, and binary size.
 
 ## Alternatives considered
 
@@ -191,7 +190,7 @@ competitors, C# ratio) and S5-03 (size).
 | Binary search over a 300-entry year table (ALGORITHM §4 as written) | 9 compares and up to 12 month steps, against one load and one compare |
 | `InlineArray` tables, or `@section` for guaranteed static data | needs iOS 26 (Swift 6.2 runtime); our floor is iOS 15. Revisit when the floor reaches 26 |
 | Tuples of 3,589 elements | slow to type-check; indexing needs unsafe pointers |
-| One `StaticString` byte blob read through `UnsafeRawBufferPointer` | unsafe pointers (AGENTS.md §2); string literals store bytes above `0x7F` as multi-byte UTF-8 |
+| One `StaticString` byte blob read through `UnsafeRawBufferPointer` | unsafe pointers, which `Sources/` does not use; string literals store bytes above `0x7F` as multi-byte UTF-8 |
 | Returning `Span` for patro events | `Array.span` needs OS 26 |
 | Patro names as a global `[Named]` or `[String]` | initialised on first access; the `switch` needs nothing |
 | Sorted serial arrays and binary search for holidays and event days (C# layout, PATRO §3 suggestion) | up to 11 compares and about 5 KB more than the dense tables |
@@ -202,7 +201,7 @@ competitors, C# ratio) and S5-03 (size).
 
 - `NepaliDate` is 8 bytes instead of 4. An array of 10,000 dates costs 40 KB more.
 - The two stored forms must agree. Only `init(serial:)` and the validated `init(year:month:day:)`
-  path create values; the exhaustive test (S1-05) checks all 109,212.
+  path create values; the exhaustive test checks all 109,212.
 - `docs/API.md` changes: `PatroEvents`, `Named` with computed names, `append…(to:)` formatters,
   `some StringProtocol` parsing, `BitwiseCopyable`.
 - Swift numbers are never in the same column as the reference-machine numbers; the comparison

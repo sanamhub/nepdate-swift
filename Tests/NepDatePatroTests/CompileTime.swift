@@ -16,7 +16,7 @@ struct PatroCompileTimeTests {
     requireSendable(Patro.self)
   }
 
-  @Test("S4-05: Named is 2 bytes")
+  @Test("Named is 2 bytes")
   func layout() {
     #expect(MemoryLayout<Named>.size == 2)
   }

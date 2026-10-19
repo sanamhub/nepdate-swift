@@ -1,6 +1,6 @@
 name: bench-full
 
-# S5-02 and S5-03: the numbers in docs/benchmarks.md. package-benchmark supports Linux and macOS
+# The numbers in docs/benchmarks.md. package-benchmark supports Linux and macOS
 # only (BENCHMARK §1) and the reference machine is Windows, so the Swift numbers come from these
 # GitHub runners, never from the reference machine's column. The C# NepDate baseline runs on the
 # same runner, which is what the ratio uses.

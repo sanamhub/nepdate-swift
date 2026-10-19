@@ -14,8 +14,7 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
-# The shared-check job (the hub's reusable shared-check.yml) is added when hub H3 is merged and
-# sanamhub/nepdate exists on GitHub; see docs/plan/PROGRESS.md, S0-04.
+# The hub's reusable shared-check job is added once sanamhub/nepdate is on GitHub.
 
 jobs:
   macos:
@@ -30,7 +29,7 @@ jobs:
           persist-credentials: false
       - run: swift --version
       - run: ./scripts/ci.sh
-      - name: DocC builds without warnings (S5-01 AC1)
+      - name: DocC builds without warnings
         shell: bash
         run: |
           set -euo pipefail
@@ -67,7 +66,7 @@ jobs:
           persist-credentials: false
       - run: swift --version
       - run: ./scripts/ci.sh
-      - name: codegen is deterministic and --check fails on drift (S0-02 AC1, AC2)
+      - name: codegen is deterministic and --check fails on drift
         shell: bash
         run: |
           set -euo pipefail
@@ -81,7 +80,7 @@ jobs:
             echo "--check passed after a one-byte change"; exit 1
           fi
           swift run --package-path Tools/Codegen codegen
-      - name: ci.sh fails on an unformatted file (S0-03 AC1, AC2)
+      - name: ci.sh fails on an unformatted file
         shell: bash
         run: |
           set -uo pipefail
@@ -92,7 +91,7 @@ jobs:
           cat ci.log
           [ "$(tail -n 1 ci.log)" = "ci: failed at gate 1: format" ]
           rm Sources/NepDate/Unformatted.swift ci.log
-      - name: readme-check fails on a one-character change (S5-01 AC2)
+      - name: readme-check fails on a one-character change
         shell: bash
         run: |
           set -euo pipefail
@@ -104,7 +103,7 @@ jobs:
           fi
           cat readme.log
           grep -q "differs from Examples/Sources/core-only/main.swift" readme.log
-      - name: docs-check fails on an em dash, a task ID and a broken link (S5 docs gate)
+      - name: docs-check fails on an em dash and a broken link
         shell: bash
         run: |
           set -euo pipefail
@@ -115,12 +114,6 @@ jobs:
             cat docs.log; echo "docs-check accepted an em dash"; exit 1
           fi
           grep -q "em dash" docs.log
-          cp "$RUNNER_TEMP/README.md.orig" README.md
-          printf '\nTask S9-99.\n' >> README.md
-          if swift run --package-path Tools/Codegen docs-check > docs.log 2>&1; then
-            cat docs.log; echo "docs-check accepted a task ID"; exit 1
-          fi
-          grep -q "task ID S9-99" docs.log
           cp "$RUNNER_TEMP/README.md.orig" README.md
           perl -0pi -e 's{\(docs/API\.md\)}{(docs/does-not-exist.md)}' README.md
           if swift run --package-path Tools/Codegen docs-check > docs.log 2>&1; then
@@ -143,7 +136,7 @@ jobs:
       - run: swift --version
       - run: ./scripts/ci.ps1
         shell: pwsh
-      - name: ci.ps1 fails on an unformatted file (S0-03 AC1, AC2)
+      - name: ci.ps1 fails on an unformatted file
         shell: pwsh
         run: |
           Set-Content -NoNewline -Path Sources/NepDate/Unformatted.swift `
@@ -171,9 +164,9 @@ jobs:
         run: >
           swift package --package-path Benchmarks benchmark thresholds check
           --no-progress --path "$GITHUB_WORKSPACE/Benchmarks/Thresholds"
-      - name: First access (S1-07)
+      - name: First access
         run: swift run -c release --package-path Benchmarks first-access
-      - name: swift_once in the table accessors (S1-07)
+      - name: swift_once in the table accessors
         shell: bash
         run: |
           set -euo pipefail

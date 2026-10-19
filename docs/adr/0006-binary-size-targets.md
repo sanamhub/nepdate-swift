@@ -1,20 +1,20 @@
 # ADR-0006: Binary size targets
 
-- Status: Accepted
-- Date: 2026-10-18
-- Deciders: Sanam Pakuwal
+- **Status:** accepted
+- **Date:** 2026-10-18
+- **Approved by:** Sanam
 
 ## Context
 
 ADR-0002 §7 set two size targets: `with-patro` minus baseline < 200 KB, and `core-only` minus
-baseline < 100 KB, both on a stripped arm64 release build. In this ADR 1 KB is 1,024 bytes. S5 measured 225,632 and 91,232 bytes. S6
-added the B6 canonical fast path and measured 226,032 and 108,160. Both are over the ADR-0002
-numbers.
+baseline < 100 KB, both on a stripped arm64 release build. In this ADR 1 KB is 1,024 bytes. The first full
+measurement gave 225,632 and 91,232 bytes; adding the B6 canonical fast path made it 226,032 and
+108,160. Both are over the ADR-0002 numbers.
 
 ADR-0002 is Accepted and immutable, so its text stays as written. This ADR replaces the two size
 rows of §7 and leaves the rest of ADR-0002 in force.
 
-The S6 breakdown of the `with-patro` delta (`docs/plan/S6-perf.md`) shows that most of it is data:
+The breakdown of the `with-patro` delta (`docs/benchmarks.md`) shows that most of it is data:
 
 | Part | Bytes |
 |---|---:|
@@ -24,7 +24,7 @@ The S6 breakdown of the `with-patro` delta (`docs/plan/S6-perf.md`) shows that m
 | the core product and patro metadata | 108,160 and 1,216 |
 | **total** | **226,032** |
 
-S6-04 considered two ways to get under 200 KB and rejected both:
+Two ways to get under 200 KB were considered and rejected:
 
 - **Per-year patro modules** would let a one-year consumer link about 1/8 of the patro data, an
   expected saving near 100 KB, but it splits `Patro.coverage` and `Patro.publicHolidays` across
@@ -34,7 +34,7 @@ S6-04 considered two ways to get under 200 KB and rejected both:
   blob allocates on every read, and a statically initialised table needs `@section` and the OS 26
   runtime, above the iOS 15 floor.
 
-S7-01 rewrote the parser as one pass and met the size goal (`core-only` 143,000, delta 91,680, under
+A one-pass parser met the size goal (`core-only` 143,000, delta 91,680, under
 100 KB), but cost 46 % of B6 on ubuntu and 28 % on macOS, so it was reverted. The parser's size cost
 stays.
 
@@ -59,5 +59,4 @@ stays.
 - ADR-0002 §7's two size rows are superseded by this ADR. Its other targets (times, mallocs, first
   access, widget memory) are unchanged.
 
-Sources: `docs/plan/S6-perf.md`, `docs/benchmarks.md`, S6 size runs 39071859134 and 39069711434,
-S7-01 runs 39088610867 and 39088618338.
+Measurements and method: `docs/benchmarks.md`.

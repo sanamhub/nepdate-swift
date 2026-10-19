@@ -1,3 +1,3 @@
-// The baseline executable imports nothing from this repository. Gate 6 builds it so the size
-// targets of S5-03 can subtract it from `core-only` and `with-patro`.
+// Imports nothing from this repository. The size check subtracts it from `core-only` and
+// `with-patro` to get what each product adds (ADR-0006).
 print("baseline")

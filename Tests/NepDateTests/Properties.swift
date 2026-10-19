@@ -144,14 +144,14 @@ struct PropertyTests {
     #expect(failures == 0)
   }
 
-  /// Pieces the S3-07 generator draws from: digits, separators, month names and odd scalars.
+  /// Pieces the parser property test draws from: digits, separators, month names and odd scalars.
   static let pieces: [String] = [
     "0", "1", "2", "5", "9", "2080", "15", "०", "१", "२", "५", "९", "/", "-", ".", "_", "\\", " ",
     "|", "।", ",", "Shrawan", "shr", "SAUN", "साउन", "मार्गशीर्ष", "BS", "B.S.", "वि.सं.", "गते", "x",
     "é", "\u{0301}", "\u{1F600}", "\u{0000}", "٢", "²", "\t", "\n", "'", "MMM", "yyyy",
   ]
 
-  @Test("S3-07: parse and parseLenient never crash and round-trip what they accept")
+  @Test("parse and parseLenient never crash and round-trip what they accept")
   func parseNeverCrashes() {
     var rng = SplitMix64(seed: Self.seed ^ 8)
     var failures = 0

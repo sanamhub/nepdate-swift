@@ -1,8 +1,8 @@
 # ADR-0003: API conventions, errors and parity mapping
 
-- Status: Accepted
-- Date: 2026-10-06
-- Deciders: Sanam Pakuwal
+- **Status:** accepted
+- **Date:** 2026-10-06
+- **Approved by:** Sanam
 
 ## Decision
 

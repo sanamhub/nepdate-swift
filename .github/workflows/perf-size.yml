@@ -1,6 +1,6 @@
 name: perf-size
 
-# S6-04: build the three Examples binaries, strip them, and record the Mach-O size breakdown.
+# Build the three Examples binaries, strip them, and record the Mach-O size breakdown.
 # Raw tool output is kept so the parser can be checked against the real format.
 on:
   workflow_dispatch:

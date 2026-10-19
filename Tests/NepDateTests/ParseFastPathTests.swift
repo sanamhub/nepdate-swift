@@ -2,7 +2,7 @@ import Testing
 
 @testable import NepDate
 
-/// S6-02: the canonical fast path must be indistinguishable from the general loop.
+/// The canonical fast path must be indistinguishable from the general loop.
 @Suite("Strict parse fast path")
 struct ParseFastPathTests {
   /// Every strict separator. The danda `।` is three bytes, so its text is never canonical.
@@ -32,7 +32,7 @@ struct ParseFastPathTests {
     return "\(year)\(separator)\(monthText)\(separator)\(dayText)"
   }
 
-  @Test("S6-02: all 109,212 dates and all strict separators parse the same on both paths")
+  @Test("all 109,212 dates and all strict separators parse the same on both paths")
   func everyDateAndSeparator() {
     var log = FailureLog()
     var checked = 0
@@ -69,7 +69,7 @@ struct ParseFastPathTests {
     #expect(log.count == 0, "\(log.summary)")
   }
 
-  @Test("S6-02: canonical-shaped invalid dates fail the same way on both paths")
+  @Test("canonical-shaped invalid dates fail the same way on both paths")
   func invalidCanonical() {
     let texts = [
       "0000/00/00", "9999/99/99", "1900/12/30", "2200/01/01", "2081/13/01", "2081/04/33",

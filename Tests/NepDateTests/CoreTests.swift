@@ -4,7 +4,7 @@ import Testing
 
 @Suite("Core")
 struct CoreTests {
-  @Test("S1-01 AC1: generated tables")
+  @Test("generated tables")
   func generatedTables() {
     #expect(CalendarData.monthStart.count == 3589)
     #expect(CalendarData.monthStart[3588] == 109212)
@@ -13,7 +13,7 @@ struct CoreTests {
     #expect(CalendarData.epochUnixDays == -45920)
   }
 
-  @Test("S1-02 AC: Month and Weekday raw values")
+  @Test("Month and Weekday raw values")
   func enumRawValues() {
     #expect(Month(rawValue: 13) == nil)
     #expect(Month(rawValue: 0) == nil)
@@ -24,7 +24,7 @@ struct CoreTests {
     #expect(Weekday.sunday.rawValue == 0 && Weekday.saturday.rawValue == 6)
   }
 
-  @Test("S1-03 AC1: validation order and error kinds")
+  @Test("validation order and error kinds")
   func validation() throws {
     let longest = try bs(2081, 4, 32)
     #expect(longest.year == 2081 && longest.month == 4 && longest.day == 32)
@@ -39,7 +39,7 @@ struct CoreTests {
     expectError(.invalidMonth) { _ = try NepaliDate(year: 2081, month: 13, day: 40) }
   }
 
-  @Test("S1-03: min and max")
+  @Test("min and max")
   func minAndMax() {
     #expect(NepaliDate.min.serial == 0)
     #expect(NepaliDate.min.year == 1901 && NepaliDate.min.month == 1 && NepaliDate.min.day == 1)
@@ -47,7 +47,7 @@ struct CoreTests {
     #expect(NepaliDate.max.year == 2199 && NepaliDate.max.month == 12 && NepaliDate.max.day == 30)
   }
 
-  @Test("S1-04 AC1: AD range and Gregorian validity")
+  @Test("AD range and Gregorian validity")
   func gregorianErrors() throws {
     expectError(.outOfRange) { _ = try NepaliDate(gregorianYear: 1844, month: 4, day: 10) }
     expectError(.outOfRange) { _ = try NepaliDate(gregorianYear: 2143, month: 4, day: 16) }
@@ -70,7 +70,7 @@ struct CoreTests {
   }
 
   @Test(
-    "S1-04 AC2: ALGORITHM §9 reference values",
+    "ALGORITHM §9 reference values",
     arguments: [
       Reference(bs: (1901, 1, 1), ad: (1844, 4, 11), weekday: .thursday),
       Reference(bs: (2081, 1, 1), ad: (2024, 4, 13), weekday: .saturday),
@@ -85,13 +85,13 @@ struct CoreTests {
     #expect(try ad(row.ad.0, row.ad.1, row.ad.2) == date)
   }
 
-  @Test("S1-04 AC2: ALGORITHM §9 last supported day")
+  @Test("ALGORITHM §9 last supported day")
   func lastSupportedDay() throws {
     let g = try bs(2199, 12, 30).gregorian
     #expect(g.year == 2143 && g.month == 4 && g.day == 15)
   }
 
-  @Test("S1-04: month properties")
+  @Test("month properties")
   func monthProperties() throws {
     let date = try bs(2081, 4, 15)
     #expect(date.bsMonth == .shrawan)

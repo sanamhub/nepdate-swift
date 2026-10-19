@@ -39,7 +39,7 @@
     /// The current BS date in a time zone.
     ///
     /// When the clock is outside AD 1844-04-11 to 2143-04-15 the result is ``min`` or ``max``,
-    /// whichever is nearer, because this function can't throw (PORT-PLAN phase 4).
+    /// whichever is nearer, because this function can't throw (hub PORT-PLAN).
     ///
     /// - Parameter timeZone: The zone whose calendar date is wanted. `nil` means Nepal:
     ///   `Asia/Kathmandu`, or a fixed UTC+05:45 when the zone database lacks it.

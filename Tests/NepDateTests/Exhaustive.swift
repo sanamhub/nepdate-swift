@@ -6,7 +6,7 @@ import Testing
 struct ExhaustiveTests {
   /// Walks all 109,212 days in order, keeping the expected BS date by hand, so `init(serial:)` is
   /// checked against counting rather than against itself.
-  @Test("S1-05: every serial round-trips through BS and AD")
+  @Test("every serial round-trips through BS and AD")
   func everySerial() {
     var log = FailureLog()
     var year = 1901
@@ -41,7 +41,7 @@ struct ExhaustiveTests {
     #expect(log.count == 0, "\(log.summary)")
   }
 
-  @Test("S1-05: every month length is 29 to 32 and the bucket table needs at most one step")
+  @Test("every month length is 29 to 32 and the bucket table needs at most one step")
   func monthTables() {
     let starts = CalendarData.monthStart
     for i in 0..<(starts.count - 1) {

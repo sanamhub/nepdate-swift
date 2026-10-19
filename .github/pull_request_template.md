@@ -1,17 +1,11 @@
-<!-- Task IDs (S1-03) or issue (Closes #12). What this changes and why, in two or three
-     sentences. -->
+<!-- What this changes and why, in two or three sentences. Link the issue if there is one. -->
 
 ## How tested
 
 -
 
-## What to look at first
-
--
-
 ## Checks
 
-- [ ] `./scripts/ci.sh` (or `./scripts/ci.ps1`) passes; last line:
-- [ ] Every acceptance criterion of the task has a test
+- [ ] `./scripts/ci.sh` (or `./scripts/ci.ps1`) passes
 - [ ] No public symbol beyond `docs/API.md`; no dependency in the library products
-- [ ] `CHANGELOG.md` `[Unreleased]` updated
+- [ ] `CHANGELOG.md` `[Unreleased]` updated if a user would notice

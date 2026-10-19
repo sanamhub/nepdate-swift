@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""S7-03: fail unless each stripped Examples delta is under its ADR-0006 target.
+"""Fail unless each stripped Examples delta is under its ADR-0006 target.
 
 ADR-0006 states the targets as strict bounds (<), so a delta equal to the limit fails.
 

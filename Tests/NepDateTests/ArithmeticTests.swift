@@ -24,7 +24,7 @@ func pad(_ n: Int) -> String { n < 10 ? "0\(n)" : "\(n)" }
 
 @Suite("Arithmetic")
 struct ArithmeticTests {
-  @Test("S2-01 AC1: csharp-golden/add-days.tsv")
+  @Test("csharp-golden/add-days.tsv")
   func goldenAddDays() throws {
     let file = try VectorFile("csharp-golden/add-days.tsv", separator: "\t")
     #expect(file.rows.count == 9162)
@@ -40,7 +40,7 @@ struct ArithmeticTests {
     #expect(log.count == 0, "\(log.summary)")
   }
 
-  @Test("S2-01 AC2: adding(days:) at the ends and with extreme counts")
+  @Test("adding(days:) at the ends and with extreme counts")
   func addDaysExtremes() throws {
     expectError(.outOfRange) { _ = try NepaliDate.max.adding(days: 1) }
     expectError(.outOfRange) { _ = try NepaliDate.min.adding(days: -1) }
@@ -50,7 +50,7 @@ struct ArithmeticTests {
     #expect(try NepaliDate.max.adding(days: -109211) == NepaliDate.min)
   }
 
-  @Test("S2-01 AC3 and S2-03 AC1: days(until:) is antisymmetric and equals diff totalDays")
+  @Test("days(until:) is antisymmetric and equals diff totalDays")
   func daysUntilAndDiffTotals() throws {
     let file = try VectorFile("csharp-golden/dates.tsv", separator: "\t")
     let dates = try file.rows.compactMap { try goldenDate($0.fields[0]) }
@@ -62,7 +62,7 @@ struct ArithmeticTests {
     }
   }
 
-  @Test("S2-02 AC1: csharp-golden/add-months.tsv, clamp and spill")
+  @Test("csharp-golden/add-months.tsv, clamp and spill")
   func goldenAddMonths() throws {
     let file = try VectorFile("csharp-golden/add-months.tsv", separator: "\t")
     #expect(file.rows.count == 10180)
@@ -80,7 +80,7 @@ struct ArithmeticTests {
     #expect(log.count == 0, "\(log.summary)")
   }
 
-  @Test("S2-02 AC2: ALGORITHM §8 examples")
+  @Test("ALGORITHM §8 examples")
   func monthExamples() throws {
     let date = try bs(2081, 4, 32)
     #expect(try date.adding(months: 2) == bs(2081, 6, 30))
@@ -92,7 +92,7 @@ struct ArithmeticTests {
     #expect(try back == date.adding(months: -12, overflow: .spill))
   }
 
-  @Test("S2-02 AC3: extreme month and year counts throw")
+  @Test("extreme month and year counts throw")
   func monthExtremes() throws {
     let date = try bs(2081, 4, 15)
     expectError(.outOfRange) { _ = try date.adding(years: .max) }
@@ -105,7 +105,7 @@ struct ArithmeticTests {
     expectError(.outOfRange) { _ = try bhadra.adding(months: 7, overflow: .spill) }
   }
 
-  @Test("S2-03 AC2: diff breakdown and sign")
+  @Test("diff breakdown and sign")
   func diffBreakdown() throws {
     let a = try bs(2081, 4, 32)
     let b = try bs(2081, 6, 30)
@@ -124,7 +124,7 @@ struct ArithmeticTests {
   }
 
   @Test(
-    "S2-03: ALGORITHM §8a examples",
+    "ALGORITHM §8a examples",
     arguments: [
       DiffRow(a: (2080, 1, 1), b: (2081, 4, 15), expected: (false, 1, 3, 14, 473)),
       DiffRow(a: (2081, 4, 15), b: (2080, 1, 1), expected: (true, 1, 3, 14, -473)),
@@ -140,7 +140,7 @@ struct ArithmeticTests {
     #expect(diff.days == row.expected.3 && diff.totalDays == row.expected.4)
   }
 
-  @Test("S2-04 AC1: csharp-golden/dates.tsv fiscal and quarter columns")
+  @Test("csharp-golden/dates.tsv fiscal and quarter columns")
   func goldenFiscal() throws {
     let file = try VectorFile("csharp-golden/dates.tsv", separator: "\t")
     #expect(file.rows.count == 1018)
@@ -162,7 +162,7 @@ struct ArithmeticTests {
     #expect(log.count == 0, "\(log.summary)")
   }
 
-  @Test("S2-04: fiscal year bounds, quarters and labels")
+  @Test("fiscal year bounds, quarters and labels")
   func fiscalYear() throws {
     expectError(.outOfRange) { _ = try FiscalYear(startYear: 1900).start() }
     expectError(.outOfRange) { _ = try FiscalYear(startYear: 2199).end() }
@@ -181,7 +181,7 @@ struct ArithmeticTests {
     #expect(try FiscalYear(startYear: 2080).range().count == NepaliDateRange.year(2080).count)
   }
 
-  @Test("S2-05 AC1: every year's range length is the sum of its months")
+  @Test("every year's range length is the sum of its months")
   func yearLengths() throws {
     for year in 1901...2199 {
       let count = try NepaliDateRange.year(year).count
@@ -193,7 +193,7 @@ struct ArithmeticTests {
     expectError(.invalidMonth) { _ = try NepaliDateRange.month(year: 2081, month: 13) }
   }
 
-  @Test("S2-05 AC2 and AC3: month range, empty and one-day ranges, iteration")
+  @Test("month range, empty and one-day ranges, iteration")
   func ranges() throws {
     let shrawan = try NepaliDateRange.month(year: 2081, month: 4)
     #expect(shrawan.count == 32)

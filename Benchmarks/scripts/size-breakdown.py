@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Attribute the with-patro size delta to Mach-O sections and to symbols (S6-04).
+"""Attribute the with-patro size delta to Mach-O sections and to symbols.
 
 Runs on macOS, where `size` and `nm` understand Mach-O:
 
