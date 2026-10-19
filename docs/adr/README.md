@@ -1,8 +1,7 @@
 # Architecture Decision Records (Swift port)
 
 Decisions for this repository only. Decisions that bind every port are in the hub
-(`sanamhub/nepdate`, `docs/adr/`). Immutable once Accepted and S0 is merged; supersede with a new
-ADR.
+(`sanamhub/nepdate`, `docs/adr/`). An accepted ADR is not edited; a later ADR supersedes it.
 
 | ADR | Title | Status |
 |---|---|---|
@@ -12,3 +11,4 @@ ADR.
 | [0004](0004-testing-and-quality-gates.md) | Testing and quality gates | Accepted |
 | [0005](0005-releases.md) | Releases | Accepted |
 | [0006](0006-binary-size-targets.md) | Binary size targets | Accepted |
+| [0007](0007-docs-check-scope.md) | docs-check checks em dashes and links only | Accepted |

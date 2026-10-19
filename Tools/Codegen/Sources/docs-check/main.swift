@@ -1,20 +1,14 @@
-// Gate 6 of ADR-0004: the prose a user reads has no em dash and no port task ID, and every relative
-// link resolves. Run from the repository root:
+// The prose a user reads has no em dash and every relative link resolves (ADR-0004). Run from the
+// repository root:
 //
 //   swift run --package-path Tools/Codegen docs-check
 //
 // Scope: README.md, CHANGELOG.md, CONTRIBUTING.md, SECURITY.md and the top-level docs/*.md pages.
-// docs/adr, docs/plan and docs/runbooks keep task IDs and deviation IDs on purpose, because they
-// describe the work rather than the product.
 
 import Foundation
 
 /// The four user-facing files at the repository root.
 let rootFiles = ["README.md", "CHANGELOG.md", "CONTRIBUTING.md", "SECURITY.md"]
-
-/// A port task ID, for example `S5-01`. Hub task and deviation IDs also look like `H6-03` and
-/// `D-11`, and the top-level docs cite them, so the pattern is the port's `S` prefix only.
-let taskID = "\\bS[0-9]+-[0-9]{2}\\b"
 
 /// An inline link or image, with the destination in group 1.
 let link = "!?\\[[^\\]]*\\]\\(([^()]*)\\)"
@@ -34,7 +28,7 @@ func readText(_ path: String) -> String {
   return text.replacingOccurrences(of: "\r\n", with: "\n")
 }
 
-/// Drops inline code spans, so a task ID or a link that is shown as code is not prose.
+/// Drops inline code spans, so a link that is shown as code is not checked.
 func strippingInlineCode(_ line: String) -> String {
   guard let regex = try? NSRegularExpression(pattern: "`[^`]*`") else { return line }
   let range = NSRange(line.startIndex..., in: line)
@@ -45,11 +39,8 @@ func strippingInlineCode(_ line: String) -> String {
 func check(_ path: String, relativeTo repository: URL, into problems: inout [String]) {
   let url = repository.appendingPathComponent(path)
   let text = readText(url.path)
-  guard
-    let taskRegex = try? NSRegularExpression(pattern: taskID),
-    let linkRegex = try? NSRegularExpression(pattern: link)
-  else {
-    fail("cannot compile the check patterns")
+  guard let linkRegex = try? NSRegularExpression(pattern: link) else {
+    fail("cannot compile the link pattern")
   }
   let base = URL(fileURLWithPath: url.deletingLastPathComponent().path, isDirectory: true)
 
@@ -68,11 +59,6 @@ func check(_ path: String, relativeTo repository: URL, into problems: inout [Str
 
     let prose = strippingInlineCode(line)
     let proseRange = NSRange(prose.startIndex..., in: prose)
-
-    for match in taskRegex.matches(in: prose, range: proseRange) {
-      guard let range = Range(match.range, in: prose) else { continue }
-      problems.append("\(path):\(number): task ID \(prose[range]); the plan keeps it, the docs don't")
-    }
 
     for match in linkRegex.matches(in: prose, range: proseRange) {
       guard match.numberOfRanges > 1, let range = Range(match.range(at: 1), in: prose) else {
@@ -125,7 +111,7 @@ func run() -> Int32 {
     print("docs-check: \(problems.count) problems in \(files.count) files")
     return 1
   }
-  print("docs-check: \(files.count) files, no em dash, no task ID, every relative link resolves")
+  print("docs-check: \(files.count) files, no em dash, every relative link resolves")
   return 0
 }
 
