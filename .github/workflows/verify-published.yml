@@ -1,0 +1,74 @@
+name: verify-published
+
+# Builds a released tag from its GitHub URL in a fresh SwiftPM package, the way a user adds it, and
+# checks that the two Examples programs print the same as when built from the tagged checkout.
+# release.yml calls it after the GitHub Release exists (a release made with GITHUB_TOKEN fires no
+# release event, so a trigger would never run). It can also be run by hand for any released tag.
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        description: released tag, for example 0.1.0-beta.1
+        required: true
+        type: string
+  workflow_dispatch:
+    inputs:
+      version:
+        description: released tag, for example 0.1.0-beta.1
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  macos:
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90 # v1.7.0
+        with:
+          xcode-version: latest-stable
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.version }}
+          persist-credentials: false
+      - name: Published package against the tagged checkout
+        shell: bash
+        env:
+          VERSION: ${{ inputs.version }}
+        run: bash scripts/verify-published.sh "$VERSION"
+
+  linux:
+    runs-on: ubuntu-24.04
+    container: swift:6.4
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.version }}
+          persist-credentials: false
+      - name: Published package against the tagged checkout
+        shell: bash
+        env:
+          VERSION: ${{ inputs.version }}
+        run: bash scripts/verify-published.sh "$VERSION"
+
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: compnerd/gha-setup-swift@bbae8ce86bac5a3449f3992b3d88bc4ca25f2057 # v0.5.0
+        with:
+          swift-version: swift-6.4.0-release
+          swift-build: 6.4.0-RELEASE
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.version }}
+          persist-credentials: false
+      - name: Published package against the tagged checkout
+        shell: bash
+        env:
+          VERSION: ${{ inputs.version }}
+        run: bash scripts/verify-published.sh "$VERSION"

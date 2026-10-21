@@ -6,7 +6,9 @@ prefix (ADR-0005).
 
 ## [Unreleased]
 
-First release. One tag ships both products.
+## [0.1.0-beta.1] - 2026-10-21
+
+First public pre-release. The API may still change before 0.1.0. One tag ships both products.
 
 ### Added
 
@@ -19,6 +21,6 @@ First release. One tag ships both products.
 - `Date` and `TimeZone` interop where Foundation exists: `init(_:in:)`, `date(in:)` and
   `today(in:)`.
 - `NepDatePatro`: tithi, public holidays and events for BS 2077-01-01 to 2084-08-20 through
-  `calendarInfo`, `Patro.coverage` and `Patro.publicHolidays`.
+  `calendarInfo`, `Patro.coverage` and `Patro.publicHolidays`. The data is informational.
 - No heap allocation in conversion, arithmetic, parsing or patro lookups. Benchmarks against the
   other Swift libraries and C# NepDate are in `docs/benchmarks.md`.
