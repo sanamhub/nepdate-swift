@@ -103,6 +103,18 @@ jobs:
           fi
           cat readme.log
           grep -q "differs from Examples/Sources/core-only/main.swift" readme.log
+      - name: release-check accepts and rejects the right versions
+        run: bash scripts/test-release-check.sh
+      - name: The pushed commit builds from its GitHub URL (verify-published --revision)
+        # The same consumer verify-published.yml builds from a tag, pinned to this commit. A pull
+        # request from a fork has no commit in this repository to fetch, so it skips the step.
+        if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+        shell: bash
+        env:
+          REVISION: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          bash scripts/verify-published.sh --revision "$REVISION"
       - name: docs-check fails on an em dash and a broken link
         shell: bash
         run: |
