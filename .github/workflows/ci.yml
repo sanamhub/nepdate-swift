@@ -148,6 +148,15 @@ jobs:
       - run: swift --version
       - run: ./scripts/ci.ps1
         shell: pwsh
+      - name: The pushed commit builds from its GitHub URL (verify-published --revision)
+        # Windows runs the consumer through Git Bash and swift.exe, which is where 0.1.0-beta.1's
+        # verify-published first failed (swift run could not start the built program), so it is
+        # checked here before any tag.
+        if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+        shell: bash
+        env:
+          REVISION: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: bash scripts/verify-published.sh --revision "$REVISION"
       - name: ci.ps1 fails on an unformatted file
         shell: pwsh
         run: |

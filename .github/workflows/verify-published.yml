@@ -34,11 +34,18 @@ jobs:
         with:
           ref: ${{ inputs.version }}
           persist-credentials: false
+      # The script comes from the ref this workflow runs on, so a fixed script can re-verify a tag
+      # that was released with an older one: dispatch it from main with that tag.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          path: .verify-tool
+          persist-credentials: false
       - name: Published package against the tagged checkout
         shell: bash
         env:
           VERSION: ${{ inputs.version }}
-        run: bash scripts/verify-published.sh "$VERSION"
+        run: bash .verify-tool/scripts/verify-published.sh "$VERSION"
 
   linux:
     runs-on: ubuntu-24.04
@@ -49,11 +56,18 @@ jobs:
         with:
           ref: ${{ inputs.version }}
           persist-credentials: false
+      # The script comes from the ref this workflow runs on, so a fixed script can re-verify a tag
+      # that was released with an older one: dispatch it from main with that tag.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          path: .verify-tool
+          persist-credentials: false
       - name: Published package against the tagged checkout
         shell: bash
         env:
           VERSION: ${{ inputs.version }}
-        run: bash scripts/verify-published.sh "$VERSION"
+        run: bash .verify-tool/scripts/verify-published.sh "$VERSION"
 
   windows:
     runs-on: windows-latest
@@ -67,8 +81,15 @@ jobs:
         with:
           ref: ${{ inputs.version }}
           persist-credentials: false
+      # The script comes from the ref this workflow runs on, so a fixed script can re-verify a tag
+      # that was released with an older one: dispatch it from main with that tag.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          path: .verify-tool
+          persist-credentials: false
       - name: Published package against the tagged checkout
         shell: bash
         env:
           VERSION: ${{ inputs.version }}
-        run: bash scripts/verify-published.sh "$VERSION"
+        run: bash .verify-tool/scripts/verify-published.sh "$VERSION"

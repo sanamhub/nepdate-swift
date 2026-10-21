@@ -85,10 +85,25 @@ fi
 swift build -c release --package-path "$consumer"
 swift build -c release --package-path "$root/Examples"
 
+# The programs run from the build directory, not with `swift run`: on Windows, swift run under Git
+# Bash could not start a program built in a cygpath -m temp directory ("exec error: No such file or
+# directory"), while the built .exe itself runs fine.
+bin_path() {
+  local bin
+  bin="$(swift build -c release --package-path "$1" --show-bin-path)"
+  if command -v cygpath > /dev/null; then bin="$(cygpath -u "$bin")"; fi
+  printf '%s' "$bin"
+}
+consumer_bin="$(bin_path "$consumer")"
+examples_bin="$(bin_path "$root/Examples")"
+run_program() {
+  if [ -f "$1/$2.exe" ]; then "$1/$2.exe"; else "$1/$2"; fi
+}
+
 failed=0
 for program in core-only with-patro; do
-  want="$(swift run -c release --skip-build --package-path "$root/Examples" "$program")"
-  got="$(swift run -c release --skip-build --package-path "$consumer" "$program")"
+  want="$(run_program "$examples_bin" "$program")"
+  got="$(run_program "$consumer_bin" "$program")"
   echo "== $program (published $version)"
   printf '%s\n' "$got"
   if [ -z "$got" ] || [ "$got" != "$want" ]; then
@@ -98,7 +113,7 @@ for program in core-only with-patro; do
   fi
 done
 # The patro program must really read the almanac: BS 2081-01-01 is New Year.
-if ! swift run -c release --skip-build --package-path "$consumer" with-patro | grep -q 'New Year'; then
+if ! run_program "$consumer_bin" with-patro | grep -q 'New Year'; then
   echo "verify-published: with-patro printed no New Year event for 2081-01-01"
   failed=1
 fi
