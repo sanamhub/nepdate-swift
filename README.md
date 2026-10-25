@@ -23,7 +23,8 @@ in the hub [`sanamhub/nepdate`](https://github.com/sanamhub/nepdate); the C# ori
   app that only converts dates links no patro data. Both are released together from one tag.
 - Built for speed: an 8-byte `NepaliDate`, conversion in two or three table reads with no loop,
   patro lookups in O(1), and no heap allocation for conversion, arithmetic, parsing or patro
-  lookups. Targets and how they are measured: [ADR-0002](docs/adr/0002-representation-and-performance.md).
+  lookups. Targets and how they are measured:
+  [ADR-0002](https://github.com/sanamhub/nepdate-swift/blob/main/docs/adr/0002-representation-and-performance.md).
 - Pure Swift, Swift 6 language mode, every type `Sendable`. No dependencies. The core does not need
   Foundation; `Date` interop compiles in where Foundation exists. Small enough for widget and watch
   extensions.
@@ -34,11 +35,12 @@ in the hub [`sanamhub/nepdate`](https://github.com/sanamhub/nepdate); the C# ori
 
 Foundation's `Calendar.Identifier.vikram` (iOS 26+) is the Indian lunisolar Vikram calendar, not
 Nepal's solar Bikram Sambat; its months don't match. Apple has no Nepali calendar
-([docs/competitors.md](docs/competitors.md)). Use this package for Nepali dates.
+([docs/competitors.md](https://github.com/sanamhub/nepdate-swift/blob/main/docs/competitors.md)).
+Use this package for Nepali dates.
 
 > **Status:** 0.1.0-beta.1, the first public pre-release. The API is listed in
-> [docs/API.md](docs/API.md) and may still change before 0.1.0. Patro data (tithi, holidays,
-> events) is informational, not an official calendar.
+> [docs/API.md](https://github.com/sanamhub/nepdate-swift/blob/main/docs/API.md) and may still change before 0.1.0.
+> Patro data (tithi, holidays, events) is informational, not an official calendar.
 
 ## Install
 
@@ -93,14 +95,15 @@ Both blocks are the `Examples` programs, so CI builds and runs them.
 
 | Topic | Where |
 |---|---|
-| Every public symbol | [docs/API.md](docs/API.md) |
-| Speed and allocations, against the other Swift libraries and C# NepDate | [docs/benchmarks.md](docs/benchmarks.md) |
-| The other Swift libraries | [docs/competitors.md](docs/competitors.md) |
-| Why it is built this way | [docs/adr/](docs/adr/README.md) |
-| The algorithm and data shared by every port | [shared/spec/](shared/spec/README.md) |
-| What changed in each version | [CHANGELOG.md](CHANGELOG.md) |
-| Building, gates and pull requests | [CONTRIBUTING.md](CONTRIBUTING.md) |
-| Reporting a vulnerability | [SECURITY.md](SECURITY.md) |
+| Every public symbol | [docs/API.md](https://github.com/sanamhub/nepdate-swift/blob/main/docs/API.md) |
+| Speed and allocations, against the other Swift libraries and C# NepDate | [docs/benchmarks.md](https://github.com/sanamhub/nepdate-swift/blob/main/docs/benchmarks.md) |
+| The other Swift libraries | [docs/competitors.md](https://github.com/sanamhub/nepdate-swift/blob/main/docs/competitors.md) |
+| Why it is built this way | [docs/adr/](https://github.com/sanamhub/nepdate-swift/blob/main/docs/adr/README.md) |
+| The algorithm and data shared by every port | [shared/spec/](https://github.com/sanamhub/nepdate-swift/blob/main/shared/spec/README.md) |
+| What changed in each version | [CHANGELOG.md](https://github.com/sanamhub/nepdate-swift/blob/main/CHANGELOG.md) |
+| Building, gates and pull requests | [CONTRIBUTING.md](https://github.com/sanamhub/nepdate-swift/blob/main/CONTRIBUTING.md) |
+| Reporting a vulnerability | [SECURITY.md](https://github.com/sanamhub/nepdate-swift/blob/main/SECURITY.md) |
+| Guides and examples | [nepdate.com/docs/swift](https://nepdate.com/docs/swift/) |
 | A wrong date, holiday or tithi | the hub's [data error form](https://github.com/sanamhub/nepdate/issues/new/choose) |
 | The other languages | [sanamhub/nepdate](https://github.com/sanamhub/nepdate#packages) |
 
@@ -110,5 +113,7 @@ products have no dependencies.
 
 ## License
 
-MIT ([LICENSE](LICENSE)). Calendar data from NepDate by Raju Prasai and contributors, MIT
-([shared/data/NOTICE](shared/data/NOTICE)). Not affiliated with the Government of Nepal.
+MIT ([LICENSE](https://github.com/sanamhub/nepdate-swift/blob/main/LICENSE)). Calendar data from NepDate by
+Raju Prasai and contributors, MIT
+([shared/data/NOTICE](https://github.com/sanamhub/nepdate-swift/blob/main/shared/data/NOTICE)). Not affiliated
+with the Government of Nepal.
