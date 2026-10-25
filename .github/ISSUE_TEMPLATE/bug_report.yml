@@ -1,0 +1,47 @@
+name: Bug report
+description: A wrong result, crash or build failure in NepDate or NepDatePatro.
+labels: ["bug"]
+body:
+  - type: textarea
+    id: input
+    attributes:
+      label: Input
+      description: The code or the date you passed in, as a short Swift snippet.
+      render: swift
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual
+      description: The result, the thrown error, or the compiler error.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: nepdate-swift version
+      placeholder: 0.1.0
+    validations:
+      required: true
+  - type: input
+    id: swift
+    attributes:
+      label: Swift version
+      description: The output of `swift --version`.
+      placeholder: Swift 6.2
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      placeholder: iOS 18.2, macOS 15, Ubuntu 24.04, Windows 11
+    validations:
+      required: true
