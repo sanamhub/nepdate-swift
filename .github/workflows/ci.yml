@@ -127,7 +127,9 @@ jobs:
           fi
           grep -q "em dash" docs.log
           cp "$RUNNER_TEMP/README.md.orig" README.md
-          perl -0pi -e 's{\(docs/API\.md\)}{(docs/does-not-exist.md)}' README.md
+          printf '
+See [the missing page](docs/does-not-exist.md).
+' >> README.md
           if swift run --package-path Tools/Codegen docs-check > docs.log 2>&1; then
             cat docs.log; echo "docs-check accepted a broken link"; exit 1
           fi
