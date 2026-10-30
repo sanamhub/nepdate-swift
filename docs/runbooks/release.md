@@ -26,6 +26,14 @@ Decided in ADR-0005. Owner: maintainer. Approver: a second person.
    <https://swiftpackageindex.com/add-a-package>.
 7. Add an empty `## [Unreleased]` to the changelog.
 
+The same workflow also runs on a schedule. Every Monday one Linux runner installs the newest
+release (`latest`, resolved from the Releases API) and checks a date conversion and the New Year
+event; every day a metadata-only run confirms that the tag is still released and that its tarball
+answers a HEAD request, with no download. A failed scheduled run opens or updates one issue
+labelled `published-check`, titled `Published nepdate-swift <version> does not install or run`, and
+comments on it only when the failing output changed. Create that label once on the repository;
+nothing else is needed. A green scheduled run says nothing and opens nothing.
+
 ## Pre-releases
 
 A tag such as `0.1.0-beta.1` goes through the same steps. Its changelog section is

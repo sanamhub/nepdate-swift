@@ -6,6 +6,11 @@ prefix (ADR-0005).
 
 ## [Unreleased]
 
+### Changed
+
+- The published package check also runs weekly and daily, and reports a failure through one
+  `published-check` issue.
+
 ## [0.1.0-beta.1] - 2026-10-21
 
 First public pre-release. The API may still change before 0.1.0. One tag ships both products.
