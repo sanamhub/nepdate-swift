@@ -660,7 +660,7 @@ enum PatroData {
     466, 342, 338, 341, 464, 467, 343, 594, 344, 536, 345, 468, 477, 709, 349, 350,
     664, 469, 351, 352, 594, 375, 355, 514, 539, 540, 470, 668, 471, 353, 359, 360,
     541, 354, 542, 375, 594, 362, 365, 546, 477, 751, 369, 675, 551, 373, 372, 752,
-    677, 721, 195, 477, 443, 477, 706, 477,
+    677, 753, 195, 477, 443, 477, 706, 477,
   ]
 
   /// The Nepali and English text of name `id`. Ids 0 to 31 are the tithi names.
@@ -1419,6 +1419,7 @@ enum PatroData {
     case 750: return ("सरस्वती पूजा", "Saraswati Puja")
     case 751: return ("घोडेजात्रा (काठमाडौं उपत्यका बिदा)", "Ghode Jatra (Kathmandu Valley Holiday)")
     case 752: return ("विश्व ज्योतिष स्थापना दिवस", "World Astrology Day")
+    case 753: return ("नयाँ वर्ष २०८४", "New Year 2084")
     default: return ("", "")
     }
   }
