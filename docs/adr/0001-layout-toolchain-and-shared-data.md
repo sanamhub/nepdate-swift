@@ -1,6 +1,6 @@
 # ADR-0001: Package layout, toolchain and shared data
 
-- **Status:** accepted
+- **Status:** accepted (amended by ADR-0008)
 - **Date:** 2026-10-06
 - **Approved by:** Sanam
 - **Revised:** 2026-10-10, §6: the core generator also reads `shared/spec/PARSING.md`.

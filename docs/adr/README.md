@@ -12,3 +12,4 @@ Decisions for this repository only. Decisions that bind every port are in the hu
 | [0005](0005-releases.md) | Releases | Accepted |
 | [0006](0006-binary-size-targets.md) | Binary size targets | Accepted |
 | [0007](0007-docs-check-scope.md) | docs-check checks em dashes and links only | Accepted |
+| [0008](0008-patro-counts-from-the-hub-summary.md) | Read the patro counts from the hub's summary, not from literals (amends 0001 §6) | Accepted |

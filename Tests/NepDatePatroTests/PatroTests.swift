@@ -5,29 +5,56 @@ import Testing
 
 @Suite("Patro")
 struct PatroTests {
-  @Test("generated table sizes match PATRO §3")
-  func tableSizes() {
-    #expect(PatroData.dayInfo.count == 2793)
-    #expect(PatroData.dayEventStart.count == 2794)
+  @Test("generated table sizes match the hub's patro summary")
+  func tableSizes() throws {
+    let summary = try PatroSummary()
+    #expect(PatroData.dayInfo.count == summary.days)
+    #expect(PatroData.dayEventStart.count == summary.days + 1)
     #expect(PatroData.dayEventStart.first == 0)
-    #expect(PatroData.dayEventStart.last == 3032)
-    #expect(PatroData.eventNameIDs.count == 3032)
-    #expect(PatroData.coverageLast - PatroData.coverageFirst + 1 == 2793)
-    #expect(PatroData.dayInfo.filter { $0 & 0x80 != 0 }.count == 294)
-    #expect(PatroData.dayInfo.filter { $0 & 0x3F != 0 }.count == 2190)
+    #expect(Int(PatroData.dayEventStart.last ?? 0) == summary.events)
+    #expect(PatroData.eventNameIDs.count == summary.events)
+    #expect(Int(PatroData.coverageLast - PatroData.coverageFirst) + 1 == summary.days)
+    #expect(PatroData.dayInfo.filter { $0 & 0x80 != 0 }.count == summary.holidays)
+    #expect(PatroData.dayInfo.filter { $0 & 0x3F != 0 }.count == summary.tithiDays)
     #expect(PatroData.dayInfo.allSatisfy { $0 & 0x40 == 0 })
   }
 
-  @Test("753 names, of which ids 0 to 31 are the 32 tithi names")
-  func names() {
-    for id in UInt16(0)..<753 {
+  @Test("every name id resolves, and the tithi names come first")
+  func names() throws {
+    let summary = try PatroSummary()
+    let count = try #require(UInt16(exactly: summary.names), "\(summary.names) names")
+    for id in UInt16(0)..<count {
       let name = PatroData.name(id)
       #expect(!name.nepali.isEmpty && !name.english.isEmpty, "name \(id)")
     }
-    #expect(PatroData.name(753).nepali.isEmpty && PatroData.name(753).english.isEmpty)
+    #expect(PatroData.name(count).nepali.isEmpty && PatroData.name(count).english.isEmpty)
     let tithiIDs = Set(PatroData.dayInfo.map { $0 & 0x3F }.filter { $0 != 0 })
-    #expect(tithiIDs == Set(UInt8(1)...32))
-    #expect(PatroData.eventNameIDs.allSatisfy { $0 < 753 })
+    #expect(tithiIDs.count == summary.tithiNames)
+    #expect(tithiIDs.max().map(Int.init) == summary.tithiNames)
+    #expect(PatroData.eventNameIDs.allSatisfy { $0 < count })
+  }
+
+  @Test("name text and bytes match the hub's patro summary")
+  func nameText() throws {
+    let summary = try PatroSummary()
+    let count = try #require(UInt16(exactly: summary.names), "\(summary.names) names")
+    var bytes = 0
+    var pairs = Set<String>()
+    for id in UInt16(0)..<count {
+      let name = PatroData.name(id)
+      bytes += name.nepali.utf8.count + name.english.utf8.count
+      // A NUL byte separates the two halves; the generator rejects control characters in names.
+      pairs.insert("\(name.nepali)\u{0}\(name.english)")
+    }
+    #expect(bytes == summary.nameBytes)
+    #expect(pairs.count == summary.names)
+    // Event names are a subset of the pool; the summary counts their distinct pairs.
+    var eventPairs = Set<String>()
+    for event in PatroData.eventNameIDs {
+      let name = PatroData.name(event)
+      eventPairs.insert("\(name.nepali)\u{0}\(name.english)")
+    }
+    #expect(eventPairs.count == summary.eventNames)
   }
 
   struct Anchor: Sendable, CustomTestStringConvertible {
@@ -67,17 +94,21 @@ struct PatroTests {
     #expect(info.events.map { $0.english } == anchor.events)
   }
 
-  @Test("coverage is 2077-01-01 to 2084-08-20")
+  @Test("coverage is the summary's first day to last day")
   func coverage() throws {
-    #expect(Patro.coverage.lowerBound == (try bs(2077, 1, 1)))
-    #expect(Patro.coverage.upperBound == (try bs(2084, 8, 20)))
-    #expect(Patro.coverage.count == 2793)
+    let summary = try PatroSummary()
+    #expect(Patro.coverage.lowerBound == (try NepaliDate.parse(summary.firstDay)))
+    #expect(Patro.coverage.upperBound == (try NepaliDate.parse(summary.lastDay)))
+    #expect(Int(PatroData.coverageFirst) == summary.firstSerial)
+    #expect(Int(PatroData.coverageLast) == summary.lastSerial)
+    #expect(Patro.coverage.count == summary.days)
   }
 
-  @Test("294 public holidays in ascending order")
-  func publicHolidays() {
+  @Test("public holidays are in ascending order")
+  func publicHolidays() throws {
+    let summary = try PatroSummary()
     let holidays = Array(Patro.publicHolidays)
-    #expect(holidays.count == 294)
+    #expect(holidays.count == summary.holidays)
     #expect(zip(holidays, holidays.dropFirst()).allSatisfy { $0 < $1 })
     #expect(holidays.allSatisfy { $0.calendarInfo.isPublicHoliday })
   }
@@ -118,6 +149,7 @@ struct PatroTests {
 
   @Test("every covered day equals a reference built from the JSON files")
   func everyDayMatchesJSON() throws {
+    let summary = try PatroSummary()
     let reference = try referenceDays()
     var checked = 0
     for date in Patro.coverage {
@@ -130,7 +162,7 @@ struct PatroTests {
       #expect(info.events.map { $0.english } == (day?.events ?? []).map(\.en), "\(key(date))")
       checked += 1
     }
-    #expect(checked == 2793)
+    #expect(checked == summary.days)
     // Every JSON day is inside the coverage, so none was skipped.
     let covered = Set(Patro.coverage.map(key))
     #expect(reference.keys.allSatisfy { covered.contains($0) })
