@@ -5,8 +5,8 @@ import Testing
 
 // C#'s CalendarDataTests check its internal arrays (CalendarStrings, CalendarOffsets, TithiData,
 // EventData, HolidayData). The same facts are checked on PatroData (ADR-0002 §3), which keeps
-// dense per-day tables instead of sorted day offsets. The six CalendarOffsets rows check the
-// coverage of 2,793 days and dayEventStart (roadmap, C# test catalogue).
+// dense per-day tables instead of sorted day offsets. The six CalendarOffsets rows check that every
+// covered day has its own offset and that dayEventStart spans the events.
 
 @Suite("CalendarDataTests")
 struct CalendarDataTests {
@@ -17,14 +17,18 @@ struct CalendarDataTests {
   }
 
   @Test("CalendarDataTests.CalendarStrings_Pool_IsNonEmpty")
-  func poolIsNonEmpty() {
+  func poolIsNonEmpty() throws {
+    let summary = try PatroSummary()
+    let last = try #require(UInt16(exactly: summary.names - 1), "\(summary.names) names")
     #expect(!PatroData.name(0).english.isEmpty)
-    #expect(!PatroData.name(752).english.isEmpty)
+    #expect(!PatroData.name(last).english.isEmpty)
   }
 
   @Test("CalendarDataTests.CalendarStrings_Pool_AllEntriesHaveNonEmptyNpAndEn")
-  func poolAllEntriesNonEmpty() {
-    for id in UInt16(0)..<753 {
+  func poolAllEntriesNonEmpty() throws {
+    let summary = try PatroSummary()
+    let count = try #require(UInt16(exactly: summary.names), "\(summary.names) names")
+    for id in UInt16(0)..<count {
       #expect(!PatroData.name(id).nepali.isEmpty, "name \(id)")
       #expect(!PatroData.name(id).english.isEmpty, "name \(id)")
     }
@@ -42,46 +46,53 @@ struct CalendarDataTests {
   }
 
   @Test("CalendarDataTests.CalendarOffsets_TotalDays_MatchesExpectedCount")
-  func totalDays() {
-    #expect(PatroData.dayInfo.count == 2793)
-    #expect(Patro.coverage.count == 2793)
+  func totalDays() throws {
+    let summary = try PatroSummary()
+    #expect(PatroData.dayInfo.count == summary.days)
+    #expect(Patro.coverage.count == summary.days)
   }
 
   @Test("CalendarDataTests.CalendarOffsets_GetOffset_BaseYear_Month1_Day1_ReturnsZero")
   func firstDayIsOffsetZero() throws {
-    #expect(try bs(2077, 1, 1).serial - PatroData.coverageFirst == 0)
+    let summary = try PatroSummary()
+    #expect(try NepaliDate.parse(summary.firstDay).serial == PatroData.coverageFirst)
   }
 
   @Test("CalendarDataTests.CalendarOffsets_GetOffset_OutOfRange_ReturnsNegativeOne")
   func dayBeforeCoverageHasNoOffset() throws {
-    let before = try bs(2076, 12, 1).lastDayOfMonth
+    let summary = try PatroSummary()
+    let before = try NepaliDate.parse(summary.firstDay).adding(days: -1)
     #expect(before.serial - PatroData.coverageFirst == -1)
     #expect(before.calendarInfo.events.isEmpty && !before.calendarInfo.isPublicHoliday)
   }
 
   @Test("CalendarDataTests.CalendarOffsets_GetOffset_AllOffsetsAreUniqueSentinel")
-  func everyCoveredDayHasItsOwnOffset() {
+  func everyCoveredDayHasItsOwnOffset() throws {
+    let summary = try PatroSummary()
     let offsets = Patro.coverage.map { Int($0.serial - PatroData.coverageFirst) }
-    #expect(offsets == Array(0..<2793))
+    #expect(offsets == Array(0..<summary.days))
   }
 
   @Test("CalendarDataTests.TithiData_DayOffsets_IsStrictlySorted")
   func tithiDaysAreContiguous() throws {
-    // PATRO §3: one tithi for every day from 2078-01-02 to 2083-12-30, no gap.
+    // PATRO §3: one tithi for every day from the summary's first tithi day to its last, no gap.
+    let summary = try PatroSummary()
     let withTithi = Patro.coverage.filter { $0.calendarInfo.tithi != nil }
-    #expect(withTithi.first == (try bs(2078, 1, 2)))
-    #expect(withTithi.last == (try bs(2083, 12, 30)))
+    #expect(withTithi.first == (try NepaliDate.parse(summary.tithiFirstDay)))
+    #expect(withTithi.last == (try NepaliDate.parse(summary.tithiLastDay)))
     #expect(zip(withTithi, withTithi.dropFirst()).allSatisfy { $0.days(until: $1) == 1 })
   }
 
   @Test("CalendarDataTests.TithiData_AllPoolIds_AreInRange")
-  func tithiIDsAreInRange() {
-    #expect(PatroData.dayInfo.allSatisfy { $0 & 0x3F <= 32 })
+  func tithiIDsAreInRange() throws {
+    let summary = try PatroSummary()
+    #expect(PatroData.dayInfo.allSatisfy { Int($0 & 0x3F) <= summary.tithiNames })
   }
 
-  @Test("CalendarDataTests.TithiData_EntryCount_Matches2190")
-  func tithiCount() {
-    #expect(Patro.coverage.filter { $0.calendarInfo.tithi != nil }.count == 2190)
+  @Test("CalendarDataTests.TithiData_EntryCount_MatchesSummary")
+  func tithiCount() throws {
+    let summary = try PatroSummary()
+    #expect(Patro.coverage.filter { $0.calendarInfo.tithi != nil }.count == summary.tithiDays)
   }
 
   @Test("CalendarDataTests.EventData_DayOffsets_IsStrictlySorted")
@@ -103,13 +114,16 @@ struct CalendarDataTests {
   }
 
   @Test("CalendarDataTests.EventData_AllEntries_AreInRange")
-  func eventIDsAreInRange() {
-    #expect(PatroData.eventNameIDs.allSatisfy { $0 < 753 })
+  func eventIDsAreInRange() throws {
+    let summary = try PatroSummary()
+    let count = try #require(UInt16(exactly: summary.names), "\(summary.names) names")
+    #expect(PatroData.eventNameIDs.allSatisfy { $0 < count })
   }
 
-  @Test("CalendarDataTests.EventData_DayCount_Matches1671")
-  func eventDayCount() {
-    #expect(Patro.coverage.filter { !$0.calendarInfo.events.isEmpty }.count == 1671)
+  @Test("CalendarDataTests.EventData_DayCount_MatchesSummary")
+  func eventDayCount() throws {
+    let summary = try PatroSummary()
+    #expect(Patro.coverage.filter { !$0.calendarInfo.events.isEmpty }.count == summary.eventDays)
   }
 
   @Test("CalendarDataTests.HolidayData_DayOffsets_IsStrictlySorted")
@@ -118,9 +132,10 @@ struct CalendarDataTests {
     #expect(zip(holidays, holidays.dropFirst()).allSatisfy { $0 < $1 })
   }
 
-  @Test("CalendarDataTests.HolidayData_Count_Matches294")
-  func holidayCount() {
-    #expect(Array(Patro.publicHolidays).count == 294)
+  @Test("CalendarDataTests.HolidayData_Count_MatchesSummary")
+  func holidayCount() throws {
+    let summary = try PatroSummary()
+    #expect(Array(Patro.publicHolidays).count == summary.holidays)
   }
 
   @Test("CalendarDataTests.NepaliDate_2081_01_01_CalendarData")
@@ -180,9 +195,11 @@ struct CalendarDataTests {
 
   @Test("CalendarDataTests.NepaliDate_OutsideTithiRange_TithiIsEmpty")
   func outsideTithiRange() throws {
+    let summary = try PatroSummary()
     #expect(try bs(2070, 6, 15).calendarInfo.tithi == nil)
     // Inside the coverage but before the tithi data starts.
-    #expect(try bs(2077, 1, 1).calendarInfo.tithi == nil)
+    let beforeTithi = try NepaliDate.parse(summary.tithiFirstDay).adding(days: -1)
+    #expect(beforeTithi.calendarInfo.tithi == nil)
   }
 
   @Test("CalendarDataTests.NepaliDate_EventsNp_And_EventsEn_AlwaysHaveSameLength")
@@ -249,9 +266,11 @@ struct CalendarDataTests {
     #expect(outside.isEmpty)
   }
 
-  @Test("CalendarDataTests.HolidayCount_ViaApi_Matches294")
+  @Test("CalendarDataTests.HolidayCount_ViaApi_MatchesSummary")
   func holidayCountViaAPI() throws {
-    #expect(try Self.wideRange().filter { $0.calendarInfo.isPublicHoliday }.count == 294)
+    let summary = try PatroSummary()
+    let holidays = try Self.wideRange().filter { $0.calendarInfo.isPublicHoliday }
+    #expect(holidays.count == summary.holidays)
   }
 
   // C# returns empty arrays, never null; `events` is a collection that is empty or not.

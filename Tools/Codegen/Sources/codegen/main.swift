@@ -13,9 +13,8 @@ enum Paths {
   static let wordsOutput = "Sources/NepDate/LenientWords.generated.swift"
   static let patroDirectory = "shared/data/patro"
   static let patroOutput = "Sources/NepDatePatro/Patro.generated.swift"
-  /// Serials of BS 2077-01-01 and 2084-08-20, the days PATRO §2 says the data covers.
-  static let coverageFirst = 64285
-  static let coverageLast = 67077
+  /// The patro counts the hub generates from the same data (PATRO §3).
+  static let patroSummary = "shared/spec/vectors/patro-summary.json"
   /// Era markers and filler words that lenient parsing drops (PARSING §2).
   static let droppedWords = [
     "bs", "b.s.", "b.s", "vs", "v.s.", "v.s", "बि.सं.", "वि.सं.", "बि.सं", "वि.सं", "गते", "मिति",
@@ -285,6 +284,89 @@ struct PatroFile: Decodable {
   }
 }
 
+/// The counts and range edges `shared/spec/vectors/patro-summary.json` records for this data.
+struct PatroSummary: Decodable {
+  let schema: Int
+  let firstYear: Int
+  let lastYear: Int
+  let firstDay: String
+  let lastDay: String
+  let firstSerial: Int
+  let lastSerial: Int
+  let days: Int
+  let tithiFirstDay: String
+  let tithiLastDay: String
+  let tithiFirstSerial: Int
+  let tithiDays: Int
+  let tithiNames: Int
+  let holidays: Int
+  let eventDays: Int
+  let events: Int
+  let eventNames: Int
+  let names: Int
+  let nameBytes: Int
+
+  enum CodingKeys: String, CodingKey {
+    case schema
+    case firstYear = "first_year"
+    case lastYear = "last_year"
+    case firstDay = "first_day"
+    case lastDay = "last_day"
+    case firstSerial = "first_serial"
+    case lastSerial = "last_serial"
+    case days
+    case tithiFirstDay = "tithi_first_day"
+    case tithiLastDay = "tithi_last_day"
+    case tithiFirstSerial = "tithi_first_serial"
+    case tithiDays = "tithi_days"
+    case tithiNames = "tithi_names"
+    case holidays
+    case eventDays = "event_days"
+    case events
+    case eventNames = "event_names"
+    case names
+    case nameBytes = "name_bytes"
+  }
+}
+
+/// The summary the hub writes from the same data. A port whose `shared/` predates it is told to
+/// re-sync rather than checked against nothing.
+func loadPatroSummary() -> PatroSummary {
+  guard FileManager.default.fileExists(atPath: Paths.patroSummary) else {
+    fail("\(Paths.patroSummary) is missing; re-sync shared/ from the hub, which writes that file")
+  }
+  let data: Data
+  do {
+    data = try Data(contentsOf: URL(fileURLWithPath: Paths.patroSummary))
+  } catch {
+    fail("cannot read \(Paths.patroSummary): \(error)")
+  }
+  let summary: PatroSummary
+  do {
+    summary = try JSONDecoder().decode(PatroSummary.self, from: data)
+  } catch {
+    fail("cannot decode \(Paths.patroSummary): \(error)")
+  }
+  guard summary.schema == 1 else {
+    fail("schema is \(summary.schema) in \(Paths.patroSummary), expected 1")
+  }
+  return summary
+}
+
+/// Fails unless the data's value matches the summary, naming the field and both values.
+func check(_ field: String, _ actual: Int, _ expected: Int) {
+  guard actual == expected else {
+    fail("\(field) is \(actual) in shared/data, but \(expected) in \(Paths.patroSummary)")
+  }
+}
+
+/// Fails unless the data's text matches the summary, naming the field and both values.
+func check(_ field: String, _ actual: String, _ expected: String) {
+  guard actual == expected else {
+    fail("\(field) is \(actual) in shared/data, but \(expected) in \(Paths.patroSummary)")
+  }
+}
+
 /// Serial of a `YYYY-MM-DD` BS day key, or nil when it is not a valid date.
 func serialOfKey(_ key: String, monthStart: [Int]) -> Int? {
   let parts = key.split(separator: "-", omittingEmptySubsequences: false)
@@ -295,6 +377,14 @@ func serialOfKey(_ key: String, monthStart: [Int]) -> Int? {
   let index = (year - 1901) * 12 + month - 1
   guard day >= 1, day <= monthStart[index + 1] - monthStart[index] else { return nil }
   return monthStart[index] + day - 1
+}
+
+/// `YYYY-MM-DD` of a serial, for comparing the data's range edges with the summary.
+func keyOfSerial(_ serial: Int, monthStart: [Int]) -> String {
+  var index = 0
+  while index + 1 < monthStart.count, monthStart[index + 1] <= serial { index += 1 }
+  func two(_ n: Int) -> String { n < 10 ? "0\(n)" : "\(n)" }
+  return "\(1901 + index / 12)-\(two(index % 12 + 1))-\(two(serial - monthStart[index] + 1))"
 }
 
 /// A Swift string literal for `text`; the generator rejects control characters.
@@ -320,12 +410,15 @@ func numberRows<C: Collection>(_ values: C) -> String where C.Element == Int {
   return out
 }
 
-/// The patro tables of ADR-0002 §3 from `shared/data/patro/*.json`.
+/// The patro tables of ADR-0002 §3 from `shared/data/patro/*.json`, checked against the counts the
+/// hub writes in `shared/spec/vectors/patro-summary.json` (PATRO §3).
 func patroSource(_ calendar: CalendarInput, header: String) -> String {
   let monthStart = monthStarts(calendar)
-  let first = Paths.coverageFirst
-  let last = Paths.coverageLast
+  let summary = loadPatroSummary()
+  let first = summary.firstSerial
+  let last = summary.lastSerial
   let count = last - first + 1
+  check("days", count, summary.days)
 
   let names = (try? FileManager.default.contentsOfDirectory(atPath: Paths.patroDirectory)) ?? []
   let files = names.compactMap { name -> (year: Int, name: String)? in
@@ -349,13 +442,52 @@ func patroSource(_ calendar: CalendarInput, header: String) -> String {
       guard let serial = serialOfKey(key, monthStart: monthStart) else {
         fail("\(path): day key \(key) is not a valid BS date")
       }
-      guard serial >= first, serial <= last else { fail("\(path): day \(key) is outside coverage") }
       guard seen.insert(serial).inserted else { fail("\(path): day \(key) appears twice") }
       days.append((serial, day))
     }
   }
   // JSON object order is not kept by the decoder, so order the days by serial.
   days.sort { $0.serial < $1.serial }
+
+  guard let dataFirst = days.first?.serial, let dataLast = days.last?.serial else {
+    fail("shared/data/patro has no days")
+  }
+  check("first_serial", dataFirst, summary.firstSerial)
+  check("last_serial", dataLast, summary.lastSerial)
+  let firstKey = keyOfSerial(dataFirst, monthStart: monthStart)
+  let lastKey = keyOfSerial(dataLast, monthStart: monthStart)
+  check("first_day", firstKey, summary.firstDay)
+  check("last_day", lastKey, summary.lastDay)
+  check("first_year", Int(firstKey.prefix(4)) ?? 0, summary.firstYear)
+  check("last_year", Int(lastKey.prefix(4)) ?? 0, summary.lastYear)
+
+  var tithiDays: [(serial: Int, day: PatroFile.Day)] = []
+  var holidays = 0
+  var eventDays = 0
+  var events = 0
+  var eventPairs = Set<PatroFile.Pair>()
+  for entry in days {
+    if entry.day.tithi != nil { tithiDays.append(entry) }
+    if entry.day.holiday == true { holidays += 1 }
+    let dayEvents = entry.day.events ?? []
+    if !dayEvents.isEmpty { eventDays += 1 }
+    events += dayEvents.count
+    eventPairs.formUnion(dayEvents)
+  }
+  check("holidays", holidays, summary.holidays)
+  check("event_days", eventDays, summary.eventDays)
+  check("events", events, summary.events)
+  check("event_names", eventPairs.count, summary.eventNames)
+
+  guard let firstTithi = tithiDays.first, let lastTithi = tithiDays.last else {
+    fail("shared/data/patro has no tithi days")
+  }
+  check("tithi_first_serial", firstTithi.serial, summary.tithiFirstSerial)
+  check(
+    "tithi_first_day", keyOfSerial(firstTithi.serial, monthStart: monthStart), summary.tithiFirstDay)
+  check(
+    "tithi_last_day", keyOfSerial(lastTithi.serial, monthStart: monthStart), summary.tithiLastDay)
+  check("tithi_days", tithiDays.count, summary.tithiDays)
 
   var nameIDs: [PatroFile.Pair: Int] = [:]
   var nameOrder: [PatroFile.Pair] = []
@@ -369,6 +501,7 @@ func patroSource(_ calendar: CalendarInput, header: String) -> String {
   for entry in days { if let tithi = entry.day.tithi { _ = id(of: tithi) } }
   let tithiCount = nameOrder.count
   guard tithiCount <= 63 else { fail("\(tithiCount) tithi names, at most 63 fit in 6 bits") }
+  check("tithi_names", tithiCount, summary.tithiNames)
 
   var dayInfo = [Int](repeating: 0, count: count)
   var eventsOfDay = [[Int]](repeating: [], count: count)
@@ -401,9 +534,9 @@ func patroSource(_ calendar: CalendarInput, header: String) -> String {
     /// Patro tables from `shared/data/patro/` (ADR-0002 §3). Day `k` is serial `coverageFirst + k`.
     @usableFromInline
     enum PatroData {
-      /// Serial of BS 2077-01-01, the first day with patro data.
+      /// Serial of BS \(summary.firstDay), the first day with patro data.
       @usableFromInline static let coverageFirst: Int32 = \(first)
-      /// Serial of BS 2084-08-20, the last day with patro data.
+      /// Serial of BS \(summary.lastDay), the last day with patro data.
       @usableFromInline static let coverageLast: Int32 = \(last)
 
       /// One entry per day: bits 0 to 5 are the tithi name id + 1 (0: no tithi), bit 7 is set on a
@@ -443,6 +576,8 @@ func patroSource(_ calendar: CalendarInput, header: String) -> String {
   out += "    default: return (\"\", \"\")\n    }\n  }\n}\n"
 
   let stringBytes = nameOrder.reduce(0) { $0 + $1.np.utf8.count + $1.en.utf8.count }
+  check("names", nameOrder.count, summary.names)
+  check("name_bytes", stringBytes, summary.nameBytes)
   print(
     "codegen: dayInfo \(count) bytes, dayEventStart \(2 * dayEventStart.count) bytes, "
       + "eventNameIDs \(2 * eventNameIDs.count) bytes, \(nameOrder.count) names "

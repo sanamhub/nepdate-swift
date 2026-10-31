@@ -128,7 +128,7 @@ public enum Patro: Sendable {
   /// Every public holiday in the data, in ascending order, found by scanning the day table.
   public static var publicHolidays: some Sequence<NepaliDate> {
     PatroData.dayInfo.indices.lazy.filter { PatroData.dayInfo[$0] & 0x80 != 0 }.map {
-      // $0 < dayInfo.count = 2,793, so the sum stays inside the covered serials.
+      // $0 < dayInfo.count, so the sum stays inside the covered serials.
       NepaliDate(serial: PatroData.coverageFirst &+ Int32($0))
     }
   }

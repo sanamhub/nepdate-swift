@@ -4,6 +4,8 @@ on:
   pull_request:
   push:
     branches: [main]
+  # The shared sync starts CI this way on the pull request it opens.
+  workflow_dispatch:
   # release.yml runs the same jobs on a tag, so a tag cannot release without the gates.
   workflow_call:
 
@@ -14,9 +16,12 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
-# The hub's reusable shared-check job is added once sanamhub/nepdate is on GitHub.
-
 jobs:
+  shared-check:
+    permissions:
+      contents: read
+    uses: sanamhub/nepdate/.github/workflows/shared-check.yml@f94d67c0c85de7909cf54d7e4e96f226ca750129 # main 2026-10-31
+
   macos:
     runs-on: macos-latest
     timeout-minutes: 30
