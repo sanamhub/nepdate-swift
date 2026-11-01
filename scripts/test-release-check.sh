@@ -43,8 +43,21 @@ expect fail 0.1.0         '## [0.1.0] - 2026-10\n'
 expect fail 0.1.0         '## [0.1.0] - soon\n'
 expect fail 0.1.0         '### [0.1.0] - 2026-10-21\n'
 
+# --print reads the newest released heading and validates it the same way.
+printf '%b' "$beta" > "$dir/CHANGELOG.md"
+printed="$(bash "$check" --print "$dir/CHANGELOG.md")"
+if [ "$printed" != "0.1.0-beta.1" ]; then
+  echo "FAIL: --print gave '$printed', want 0.1.0-beta.1"
+  failures=$((failures + 1))
+fi
+printf '## [Unreleased]\n' > "$dir/CHANGELOG.md"
+if bash "$check" --print "$dir/CHANGELOG.md" > "$dir/out" 2>&1; then
+  echo "FAIL: --print accepted a changelog with no release"
+  failures=$((failures + 1))
+fi
+
 if [ "$failures" -ne 0 ]; then
   echo "test-release-check: $failures case(s) failed"
   exit 1
 fi
-echo "test-release-check: 18 cases ok"
+echo "test-release-check: 20 cases ok"
