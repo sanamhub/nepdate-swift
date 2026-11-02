@@ -173,6 +173,10 @@ jobs:
     if: github.event_name != 'schedule'
     needs: resolve
     runs-on: windows-latest
+    # Windows runners default to PowerShell; every run: block here is bash.
+    defaults:
+      run:
+        shell: bash
     timeout-minutes: 45
     steps:
       - uses: compnerd/gha-setup-swift@9ff1ee4c44888c5817fc14d1b257ac8cabb4935f # v0.5.1
