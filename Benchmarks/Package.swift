@@ -6,8 +6,7 @@ import PackageDescription
 //   swift package --package-path Benchmarks benchmark
 //
 // The shivathapaa engine is an arm64 macOS XCFramework only, so its binary target and the code that
-// calls it exist only on that platform. The nrlnishan converter is vendored MIT source and builds
-// everywhere.
+// calls it exist only on that platform.
 #if os(macOS) && arch(arm64)
   let shivathapaaTargets: [Target] = [
     .binaryTarget(
@@ -17,11 +16,14 @@ import PackageDescription
       checksum: "57f64dac9083490e4aabf65b768b919429ffe7fb89f025a5027311bed2011ae4")
   ]
   let competitorDependencies: [Target.Dependency] = [
-    "NRLNishan", .target(name: "nepali_date_picker_core"),
+    "BenchmarkInputs", .product(name: "Benchmark", package: "benchmark"),
+    .target(name: "nepali_date_picker_core"),
   ]
 #else
   let shivathapaaTargets: [Target] = []
-  let competitorDependencies: [Target.Dependency] = ["NRLNishan"]
+  let competitorDependencies: [Target.Dependency] = [
+    "BenchmarkInputs", .product(name: "Benchmark", package: "benchmark"),
+  ]
 #endif
 
 let package = Package(
@@ -35,12 +37,6 @@ let package = Package(
     .target(
       name: "BenchmarkInputs",
       dependencies: [.product(name: "NepDate", package: "nepdate-swift")]),
-    // The MIT source of nrlnishan/NepaliDateConverter, unchanged, with its licence. The target is
-    // named NRLNishan because the shivathapaa framework also declares a `NepaliDateConverter`.
-    .target(
-      name: "NRLNishan",
-      path: "Vendor/NepaliDateConverter",
-      exclude: ["LICENSE", "README.md"]),
     .executableTarget(
       name: "NepDateBenchmarks",
       dependencies: [
@@ -53,9 +49,7 @@ let package = Package(
       plugins: [.plugin(name: "BenchmarkPlugin", package: "benchmark")]),
     .executableTarget(
       name: "CompetitorBenchmarks",
-      dependencies: competitorDependencies + [
-        "BenchmarkInputs", .product(name: "Benchmark", package: "benchmark"),
-      ],
+      dependencies: competitorDependencies,
       path: "Benchmarks/CompetitorBenchmarks",
       plugins: [.plugin(name: "BenchmarkPlugin", package: "benchmark")]),
     .executableTarget(
@@ -66,7 +60,7 @@ let package = Package(
       dependencies: [.product(name: "NepDate", package: "nepdate-swift")]),
     .testTarget(
       name: "CompetitorAgreementTests",
-      dependencies: ["BenchmarkInputs"] + competitorDependencies),
+      dependencies: competitorDependencies),
   ] + shivathapaaTargets,
   swiftLanguageModes: [.v6]
 )
