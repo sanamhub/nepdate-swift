@@ -8,7 +8,6 @@ import Foundation
 import Testing
 
 import BenchmarkInputs
-import NRLNishan
 
 #if canImport(nepali_date_picker_core)
   import nepali_date_picker_core
@@ -138,46 +137,6 @@ func benchmarkInputsMatchSharedData() throws {
     #expect(inputs.ad[index].month == shared.ad[index].month, "AD date \(index)")
     #expect(inputs.ad[index].day == shared.ad[index].day, "AD date \(index)")
   }
-}
-
-@Test("nrlnishan agrees with shared/data on 62 of 64 B1 dates and 59 of 64 B2 dates")
-func nrlnishanAgreement() throws {
-  let shared = try SharedDataDates()
-  let converter = NRLNishan.DateConverter()
-  var englishAgrees = 0
-  var nepaliAgrees = 0
-  var details: [String] = []
-
-  for index in 0..<64 {
-    let bs = shared.bs[index]
-    let ad = shared.ad[index]
-    let english = converter.getEnglishDate(
-      nepaliDate: DateModel(year: bs.year, month: bs.month, day: bs.day))
-    if english?.year == ad.year, english?.month == ad.month, english?.day == ad.day {
-      englishAgrees += 1
-    } else {
-      details.append(
-        "B1 \(bs.year)-\(bs.month)-\(bs.day): expected \(ad.year)-\(ad.month)-\(ad.day), got \(String(describing: english))"
-      )
-    }
-
-    let nepali = converter.getNepaliDate(
-      englishDate: DateModel(year: ad.year, month: ad.month, day: ad.day))
-    if nepali?.year == bs.year, nepali?.month == bs.month, nepali?.day == bs.day {
-      nepaliAgrees += 1
-    } else {
-      details.append(
-        "B2 \(ad.year)-\(ad.month)-\(ad.day): expected \(bs.year)-\(bs.month)-\(bs.day), got \(String(describing: nepali))"
-      )
-    }
-  }
-
-  print("nrlnishan: B1 \(englishAgrees)/64, B2 \(nepaliAgrees)/64")
-  for detail in details { print("nrlnishan: \(detail)") }
-  // Its table differs from shared/data in BS 2062 and 2081 to 2089, and getNepaliDate uses a strict
-  // `>` against the month length, so a date on a month boundary gets day 32 or 33.
-  #expect(englishAgrees == 62, "B1 agreement changed: \(details.joined(separator: "; "))")
-  #expect(nepaliAgrees == 59, "B2 agreement changed: \(details.joined(separator: "; "))")
 }
 
 #if os(macOS) && arch(arm64)

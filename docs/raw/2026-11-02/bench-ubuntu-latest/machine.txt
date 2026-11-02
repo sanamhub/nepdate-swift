@@ -1,0 +1,29 @@
+runner=ubuntu-latest
+date=2026-11-02T14:26:27Z
+Linux runnervm48cm3 7.0.0-1017-azure #17~24.04.1-Ubuntu SMP PREEMPT Thu Sep 24 18:46:57 UTC 2026 x86_64 x86_64 x86_64 GNU/Linux
+CPU(s):                                  4
+Model name:                              AMD EPYC 9V74 80-Core Processor
+Thread(s) per core:                      2
+4
+               total        used        free      shared  buff/cache   available
+Mem:            15Gi       938Mi        14Gi        43Mi       913Mi        14Gi
+Swap:          3.0Gi          0B       3.0Gi
+Swift version 6.4.1 (swift-6.4.1-RELEASE)
+Target: x86_64-unknown-linux-gnu
+10.0.403
+Microsoft.AspNetCore.App 8.0.6 [/usr/share/dotnet/shared/Microsoft.AspNetCore.App]
+Microsoft.AspNetCore.App 8.0.22 [/usr/share/dotnet/shared/Microsoft.AspNetCore.App]
+Microsoft.AspNetCore.App 8.0.33 [/usr/share/dotnet/shared/Microsoft.AspNetCore.App]
+Microsoft.AspNetCore.App 9.0.6 [/usr/share/dotnet/shared/Microsoft.AspNetCore.App]
+Microsoft.AspNetCore.App 9.0.22 [/usr/share/dotnet/shared/Microsoft.AspNetCore.App]
+Microsoft.AspNetCore.App 10.0.8 [/usr/share/dotnet/shared/Microsoft.AspNetCore.App]
+Microsoft.AspNetCore.App 10.0.11 [/usr/share/dotnet/shared/Microsoft.AspNetCore.App]
+Microsoft.AspNetCore.App 10.0.14 [/usr/share/dotnet/shared/Microsoft.AspNetCore.App]
+Microsoft.NETCore.App 8.0.6 [/usr/share/dotnet/shared/Microsoft.NETCore.App]
+Microsoft.NETCore.App 8.0.22 [/usr/share/dotnet/shared/Microsoft.NETCore.App]
+Microsoft.NETCore.App 8.0.33 [/usr/share/dotnet/shared/Microsoft.NETCore.App]
+Microsoft.NETCore.App 9.0.6 [/usr/share/dotnet/shared/Microsoft.NETCore.App]
+Microsoft.NETCore.App 9.0.22 [/usr/share/dotnet/shared/Microsoft.NETCore.App]
+Microsoft.NETCore.App 10.0.8 [/usr/share/dotnet/shared/Microsoft.NETCore.App]
+Microsoft.NETCore.App 10.0.11 [/usr/share/dotnet/shared/Microsoft.NETCore.App]
+Microsoft.NETCore.App 10.0.14 [/usr/share/dotnet/shared/Microsoft.NETCore.App]

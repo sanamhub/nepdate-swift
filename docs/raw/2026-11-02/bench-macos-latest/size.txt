@@ -1,0 +1,5 @@
+baseline 51320
+core-only 159480
+with-patro 277352
+core-only minus baseline: 108160 bytes
+with-patro minus baseline: 226032 bytes
