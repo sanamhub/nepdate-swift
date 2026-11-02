@@ -6,6 +6,8 @@ prefix (ADR-0005).
 
 ## [Unreleased]
 
+## [0.1.0-rc.1] - 2026-11-03
+
 ### Changed
 
 - The published package check also runs weekly and daily, and reports a failure through one
