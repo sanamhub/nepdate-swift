@@ -1,6 +1,9 @@
 version: 2
 updates:
+  # Keeps the pinned action SHAs current. The cooldown gives a bad release two weeks to be pulled.
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 14
