@@ -6,6 +6,8 @@ prefix (ADR-0005).
 
 ## [Unreleased]
 
+## [0.2.0-rc.1] - 2026-11-03
+
 ### Added
 
 - `NepaliDate.yearLength`, the length of the BS year, 364 to 367.
