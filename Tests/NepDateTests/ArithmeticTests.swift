@@ -212,4 +212,52 @@ struct ArithmeticTests {
     let bhadra1 = try bs(2081, 5, 1)
     #expect(shrawan.contains(a) && !shrawan.contains(bhadra1))
   }
+
+  @Test("csharp-golden/day-diff.tsv, both directions")
+  func goldenDayDiff() throws {
+    let file = try VectorFile("csharp-golden/day-diff.tsv", separator: "\t")
+    #expect(file.rows.count == 16)
+    var log = FailureLog()
+    for (line, fields) in file.rows {
+      guard fields.count == 5, fields[4].hasPrefix("D-07"),
+        let a = try goldenDate(fields[0]), let b = try goldenDate(fields[1]),
+        let daysUntil = Int(fields[2]), let operatorMinus = Int(fields[3])
+      else {
+        log.record(line, "malformed")
+        continue
+      }
+      if a.days(until: b) != daysUntil { log.record(line, "days_until \(a.days(until: b))") }
+      let diff = a - b
+      if diff.totalDays != operatorMinus { log.record(line, "operator \(diff.totalDays)") }
+      if diff.totalDays != -daysUntil { log.record(line, "operator and named differ") }
+      if b.days(until: a) != -daysUntil { log.record(line, "reversed named") }
+    }
+    #expect(log.count == 0, "\(log.summary)")
+  }
+
+  @Test("csharp-golden/year-length.tsv")
+  func goldenYearLength() throws {
+    let file = try VectorFile("year-length.tsv", separator: "\t")
+    #expect(file.rows.count == 299)
+    var log = FailureLog()
+    for (line, fields) in file.rows {
+      guard fields.count == 2, let year = Int(fields[0]), let length = Int(fields[1]) else {
+        log.record(line, "malformed")
+        continue
+      }
+      do {
+        let first = try bs(year, 1, 1)
+        if first.yearLength != length { log.record(line, "yearLength \(first.yearLength)") }
+        let last = try bs(year, 12, 1).lastDayOfMonth
+        if last.yearLength != length { log.record(line, "last day yearLength \(last.yearLength)") }
+        if try NepaliDateRange.year(year).count != length {
+          log.record(line, "range count \(try NepaliDateRange.year(year).count)")
+        }
+      } catch {
+        log.record(line, "threw \(error)")
+      }
+    }
+    #expect(log.count == 0, "\(log.summary)")
+    #expect(NepaliDate.max.yearLength == 365)
+  }
 }

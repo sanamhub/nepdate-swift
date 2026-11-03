@@ -14,9 +14,9 @@ import NepDatePatro
 
 /// The 64 BENCHMARK §3 inputs for B7 and B8: the benchmark dates moved into the patro coverage.
 func patroInputs(coverage: NepaliDateRange) -> [NepaliDate] {
-  let first = Int(coverage.startIndex)
-  let step = (Int(coverage.endIndex) - 1 - first) / 63
-  return (0..<64).map { coverage[Int32(first + $0 * step)] }
+  let first = coverage.startIndex
+  let step = (coverage.endIndex - 1 - first) / 63
+  return (0..<64).map { coverage[first + $0 * step] }
 }
 
 /// Everything `calendarInfo` says about one day, every name read in both languages, as the byte

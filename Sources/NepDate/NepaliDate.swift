@@ -125,6 +125,15 @@ public struct NepaliDate: Sendable, BitwiseCopyable, Hashable, Comparable {
     return Int(CalendarData.monthStart[index + 1] - CalendarData.monthStart[index])
   }
 
+  /// The number of days in this date's BS year, 364 to 367 (D-12).
+  ///
+  /// It is the sum of the twelve month lengths, so it does not follow the Gregorian year.
+  @inlinable
+  public var yearLength: Int {
+    let first = (Int(y) - CalendarData.minYear) * 12
+    return Int(CalendarData.monthStart[first + 12] - CalendarData.monthStart[first])
+  }
+
   /// Day 1 of this date's month.
   @inlinable
   public var firstDayOfMonth: NepaliDate {

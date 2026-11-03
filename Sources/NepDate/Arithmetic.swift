@@ -150,4 +150,87 @@ extension NepaliDate {
       serial: start + Int32(day - 1), year: CalendarData.minYear + target / 12,
       month: target % 12 + 1, day: day)
   }
+
+  /// The signed number of days from this date to `other`.
+  ///
+  /// This is the ``days(until:)`` result, the distance `stride(from:to:by:)` measures.
+  ///
+  /// - Parameter other: The date to count to.
+  /// - Returns: `other` minus this date, in days.
+  @inlinable
+  public func distance(to other: NepaliDate) -> Int {
+    Int(other.serial) - Int(serial)
+  }
+
+  /// The date `days` days later, or earlier for a negative count.
+  ///
+  /// This is the non-throwing arithmetic `stride(from:to:by:)` needs. It traps when the result
+  /// leaves BS 1901-01-01 to 2199-12-30; use ``adding(days:)`` when the count may not fit.
+  ///
+  /// - Parameter days: The number of days to add.
+  /// - Returns: The date that many days away.
+  @inlinable
+  public func advanced(by days: Int) -> NepaliDate {
+    let current = Int(serial)
+    precondition(
+      days >= -current && days <= Int(CalendarData.maxSerial) - current,
+      "\(days) days from \(description) is outside BS 1901-01-01 to 2199-12-30")
+    return NepaliDate(serial: Int32(current + days))
+  }
+
+  /// The date `days` days later, or earlier for a negative count.
+  ///
+  /// The operator is the non-throwing form; use ``adding(days:)`` for a checked result.
+  ///
+  /// - Parameters:
+  ///   - date: The starting date.
+  ///   - days: The number of days to add.
+  /// - Returns: The date that many days away.
+  @inlinable
+  public static func + (date: NepaliDate, days: Int) -> NepaliDate {
+    date.advanced(by: days)
+  }
+
+  /// The date `days` days earlier, or later for a negative count.
+  ///
+  /// The operator is the non-throwing form; use ``adding(days:)`` for a checked result.
+  ///
+  /// - Parameters:
+  ///   - date: The starting date.
+  ///   - days: The number of days to subtract.
+  /// - Returns: The date that many days away.
+  @inlinable
+  public static func - (date: NepaliDate, days: Int) -> NepaliDate {
+    guard days != Int.min else {
+      preconditionFailure("\(days) days before \(date) is outside BS 1901-01-01 to 2199-12-30")
+    }
+    return date.advanced(by: -days)
+  }
+
+  /// The reversed addition, so `5 + date` equals `date + 5`.
+  ///
+  /// - Parameters:
+  ///   - days: The number of days to add.
+  ///   - date: The starting date.
+  /// - Returns: The date that many days away.
+  @inlinable
+  public static func + (days: Int, date: NepaliDate) -> NepaliDate {
+    date.advanced(by: days)
+  }
+
+  /// The calendar breakdown from `rhs` to `lhs`, positive when `lhs` is later (D-07).
+  ///
+  /// The C# `DateTime` operator returns `lhs - rhs`; this operator keeps that direction, while
+  /// ``days(until:)`` counts the other way. The result's ``DateDiff/totalDays`` is `lhs - rhs`.
+  ///
+  /// - Parameters:
+  ///   - lhs: The later date, when positive.
+  ///   - rhs: The earlier date, when positive.
+  /// - Returns: The breakdown from `rhs` to `lhs`.
+  @inlinable
+  public static func - (lhs: NepaliDate, rhs: NepaliDate) -> DateDiff {
+    rhs.diff(to: lhs)
+  }
 }
+
+extension NepaliDate: Strideable {}

@@ -50,6 +50,8 @@ struct NepaliDateManipulationTests {
     let later = try bs(2080, 5, 16)
     #expect(earlier.days(until: later) == 15)
     #expect(later.days(until: earlier) == -15)
+    #expect((later - earlier).totalDays == 15)
+    #expect((earlier - later).totalDays == -15)
   }
 
   @Test("NepaliDateManipulationTests.Subtract_SameDate_ReturnsZero")

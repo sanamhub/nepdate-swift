@@ -17,17 +17,18 @@ in the hub [`sanamhub/nepdate`](https://github.com/sanamhub/nepdate); the C# ori
 [NepDate](https://github.com/RajuPrasai/NepDate). The iOS app in
 [`nepdate-mobile`](https://github.com/sanamhub/nepdate-mobile) is its first user.
 
-- SwiftPM package with two products: `NepDate` (conversion, formatting, parsing, arithmetic, fiscal
-  year) and `NepDatePatro`, the patro (पात्रो, the Nepali almanac: tithi, public holidays and events
-  for BS 2077-01-01 to 2084-08-20). `NepDatePatro` depends on `NepDate`, never the reverse, so an
-  app that only converts dates links no patro data. Both are released together from one tag.
+- SwiftPM package with two products: `NepDate` (dates, conversion, arithmetic, formatting, parsing,
+  ranges, fiscal years and errors) and `NepDatePatro`, the patro (पात्रो, the Nepali almanac: tithi,
+  public holidays and events for BS 2077-01-01 to 2084-08-20). `NepDatePatro` depends on `NepDate`,
+  never the reverse, so an app that only converts dates links no patro data. Both are released
+  together from one tag.
 - Built for speed: an 8-byte `NepaliDate`, conversion in two or three table reads with no loop,
   patro lookups in O(1), and no heap allocation for conversion, arithmetic, parsing or patro
   lookups. Targets and how they are measured:
   [ADR-0002](https://github.com/sanamhub/nepdate-swift/blob/main/docs/adr/0002-representation-and-performance.md).
 - Pure Swift, Swift 6 language mode, every type `Sendable`. No dependencies. The core does not need
-  Foundation; `Date` interop compiles in where Foundation exists. Small enough for widget and watch
-  extensions.
+  Foundation; `Date` interop and `FormatStyle` compile in where Foundation exists. Small enough for
+  widget and watch extensions.
 - BS 1901-01-01 to 2199-12-30 (AD 1844-04-11 to 2143-04-15). Same results as C# NepDate and every
   other port, proved by the shared vectors.
 - Apple, Linux and Windows, all three in CI. Android and Wasm builds come from the Swift Package
@@ -89,7 +90,147 @@ for event in info.events {
 }
 ```
 
-Both blocks are the `Examples` programs, so CI builds and runs them.
+Both blocks are the `Examples` programs, so CI builds and runs them. The complete surface, with a
+short example for every member, is in [docs/API.md](https://github.com/sanamhub/nepdate-swift/blob/main/docs/API.md).
+
+## What it covers
+
+### Dates and comparison
+
+```swift
+import NepDate
+
+do {
+  let date = try NepaliDate(year: 2081, month: 4, day: 15)
+  let (y, m, d) = (date.year, date.month, date.day)  // (2081, 4, 15)
+  print(date.weekday, date.dayOfYear, date.monthLength, date.yearLength)
+  print(date.adding(days: 1))  // the next day
+} catch {
+  print(error)
+}
+```
+
+### Conversion and serialization
+
+```swift
+import Foundation
+import NepDate
+
+do {
+  let date = try NepaliDate(gregorianYear: 2024, month: 7, day: 30)
+  let midnight = date.date(in: .current)
+  let packed = date.ymd  // 20810415
+  let json = try JSONEncoder().encode(date)  // "2081-04-15"
+  print(midnight, packed, json)
+} catch {
+  print(error)
+}
+```
+
+### Arithmetic
+
+```swift
+import NepDate
+
+do {
+  let date = try NepaliDate(year: 2081, month: 4, day: 15)
+  let later = try date.adding(months: 2)
+  print(date.days(until: later))  // 63
+  print((later - date).totalDays)  // 63
+  print(try date.adding(months: 2, overflow: .spill))
+} catch {
+  print(error)
+}
+```
+
+### Formatting
+
+```swift
+import NepDate
+
+do {
+  let date = try NepaliDate(year: 2081, month: 4, day: 15)
+  print(date.short(order: .dmy, separator: .dash))  // 15-04-2081
+  print(date.long(lang: .nepali))                   // साउन १५, २०८१
+  print(date.format("yyyy-MM-dd"))                  // 2081-04-15
+} catch {
+  print(error)
+}
+```
+
+### Parsing
+
+```swift
+import NepDate
+
+do {
+  let strict = try NepaliDate.parse("2081-04-15")
+  let lenient = try NepaliDate.parseLenient("15 Shrawan 2081")
+  let optional = NepaliDate(lenient: "Shrawan 15, 2081")
+  print(strict, lenient, optional as Any)
+} catch {
+  print(error)
+}
+```
+
+### Ranges
+
+```swift
+import NepDate
+
+do {
+  let start = try NepaliDate(year: 2081, month: 4, day: 10)
+  let range = try NepaliDateRange(start: start, dayCount: 11)
+  print(range.description)  // 2081/04/10 - 2081/04/20
+  print(range.splitByMonth().count)
+  print(range.workingDays().count)
+  print(range.formatted(order: .dmy, separator: .dash))
+} catch {
+  print(error)
+}
+```
+
+### Fiscal year
+
+```swift
+import NepDate
+
+do {
+  let date = try NepaliDate(year: 2081, month: 4, day: 15)
+  let fiscal = date.fiscalYear
+  print(try fiscal.range(of: .q2))  // 2081/07/01 - 2081/09/29
+  print(fiscal.label())             // 2081/82
+} catch {
+  print(error)
+}
+```
+
+### Patro
+
+```swift
+import NepDate
+import NepDatePatro
+
+let date = (try? NepaliDate(year: 2081, month: 1, day: 1)) ?? .min
+let info = date.calendarInfo
+print(info.tithi?.english ?? "no tithi")
+print(info.isPublicHoliday)
+for event in info.events {
+  print(event.english)
+}
+```
+
+### Errors
+
+```swift
+import NepDate
+
+do {
+  _ = try NepaliDate(year: 2080, month: 13, day: 1)
+} catch let error as NepDateError {
+  print(error.kind)  // invalidMonth
+}
+```
 
 ## More
 

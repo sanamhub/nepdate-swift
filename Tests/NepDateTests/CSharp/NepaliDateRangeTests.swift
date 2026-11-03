@@ -7,9 +7,8 @@ func dateRange(_ start: NepaliDate, _ end: NepaliDate) throws -> NepaliDateRange
   try #require(NepaliDateRange(start, end))
 }
 
-// D-09: the Swift range is a collection with month, year, contains, count and iteration. C# set
-// operations, splitting, working days and string forms are not ported. C# `Length` is `count`, and
-// an empty C# range (end before start) is `nil`.
+// The range is inclusive and never empty. A C# empty range (end before start) is `nil` here, so
+// every C# empty-range test checks the `nil` result instead.
 @Suite("NepaliDateRangeTests")
 struct NepaliDateRangeTests {
   @Test("NepaliDateRangeTests.Constructor_ValidDates_CreatesRange")
@@ -29,7 +28,7 @@ struct NepaliDateRangeTests {
   @Test("NepaliDateRangeTests.SingleDay_CreatesRangeWithOneDay")
   func singleDayCreatesRangeWithOneDay() throws {
     let date = try bs(2080, 1, 1)
-    let range = try dateRange(date, date)
+    let range = NepaliDateRange.singleDay(date)
     #expect(range.lowerBound == date && range.upperBound == date && range.count == 1)
   }
 
@@ -37,7 +36,7 @@ struct NepaliDateRangeTests {
   @Test("NepaliDateRangeTests.FromDayCount_CreatesCorrectRange")
   func fromDayCountCreatesCorrectRange() throws {
     let start = try bs(2080, 1, 1)
-    let range = try dateRange(start, start.adding(days: 9))
+    let range = try NepaliDateRange(start: start, dayCount: 10)
     #expect(range.lowerBound == start && range.count == 10)
     #expect(range.upperBound == (try start.adding(days: 9)))
   }
@@ -68,16 +67,89 @@ struct NepaliDateRangeTests {
     #expect(!range.contains(try bs(2080, 1, 20)))
   }
 
-  // NepaliDateRangeTests.Contains_RangeFullyContained_ReturnsTrue: D-09.
-  // NepaliDateRangeTests.Overlaps_RangesOverlap_ReturnsTrue: D-09.
-  // NepaliDateRangeTests.Overlaps_RangesDontOverlap_ReturnsFalse: D-09.
-  // NepaliDateRangeTests.IsAdjacentTo_AdjacentRanges_ReturnsTrue: D-09.
-  // NepaliDateRangeTests.Intersect_OverlappingRanges_ReturnsIntersection: D-09.
-  // NepaliDateRangeTests.Union_OverlappingRanges_ReturnsUnion: D-09.
-  // NepaliDateRangeTests.Except_RemovingRangeFromMiddle_ReturnsTwoRanges: D-09.
-  // NepaliDateRangeTests.SplitByMonth_RangeAcrossMonths_SplitsCorrectly: D-09.
-  // NepaliDateRangeTests.WorkingDays_ReturnsCorrectDays: D-09.
-  // NepaliDateRangeTests.Demo_RangeOperations: D-09.
+  @Test("NepaliDateRangeTests.Contains_RangeFullyContained_ReturnsTrue")
+  func containsRangeFullyContainedReturnsTrue() throws {
+    let range = try dateRange(bs(2080, 1, 1), bs(2080, 1, 31))
+    #expect(range.contains(try dateRange(bs(2080, 1, 5), bs(2080, 1, 20))))
+    #expect(!range.contains(try dateRange(bs(2079, 12, 30), bs(2080, 1, 5))))
+  }
+
+  @Test("NepaliDateRangeTests.Overlaps_RangesOverlap_ReturnsTrue")
+  func overlapsRangesOverlapReturnsTrue() throws {
+    let a = try dateRange(bs(2080, 1, 1), bs(2080, 1, 15))
+    let b = try dateRange(bs(2080, 1, 10), bs(2080, 1, 20))
+    #expect(a.overlaps(b) && b.overlaps(a))
+  }
+
+  @Test("NepaliDateRangeTests.Overlaps_RangesDontOverlap_ReturnsFalse")
+  func overlapsRangesDontOverlapReturnsFalse() throws {
+    let a = try dateRange(bs(2080, 1, 1), bs(2080, 1, 15))
+    let b = try dateRange(bs(2080, 1, 16), bs(2080, 1, 20))
+    #expect(!a.overlaps(b) && !b.overlaps(a))
+  }
+
+  @Test("NepaliDateRangeTests.IsAdjacentTo_AdjacentRanges_ReturnsTrue")
+  func isAdjacentToAdjacentRangesReturnsTrue() throws {
+    let a = try dateRange(bs(2080, 1, 1), bs(2080, 1, 15))
+    let b = try dateRange(bs(2080, 1, 16), bs(2080, 1, 20))
+    #expect(a.isAdjacent(to: b) && b.isAdjacent(to: a))
+  }
+
+  @Test("NepaliDateRangeTests.Intersect_OverlappingRanges_ReturnsIntersection")
+  func intersectOverlappingRangesReturnsIntersection() throws {
+    let a = try dateRange(bs(2080, 1, 1), bs(2080, 1, 15))
+    let b = try dateRange(bs(2080, 1, 10), bs(2080, 1, 20))
+    #expect(a.intersection(b) == (try dateRange(bs(2080, 1, 10), bs(2080, 1, 15))))
+  }
+
+  @Test("NepaliDateRangeTests.Union_OverlappingRanges_ReturnsUnion")
+  func unionOverlappingRangesReturnsUnion() throws {
+    let a = try dateRange(bs(2080, 1, 1), bs(2080, 1, 15))
+    let b = try dateRange(bs(2080, 1, 10), bs(2080, 1, 20))
+    #expect(a.union(b) == (try dateRange(bs(2080, 1, 1), bs(2080, 1, 20))))
+    #expect(b.union(a) == a.union(b))
+  }
+
+  @Test("NepaliDateRangeTests.Except_RemovingRangeFromMiddle_ReturnsTwoRanges")
+  func exceptRemovingRangeFromMiddleReturnsTwoRanges() throws {
+    let range = try dateRange(bs(2080, 1, 1), bs(2080, 1, 20))
+    let removed = try dateRange(bs(2080, 1, 8), bs(2080, 1, 12))
+    #expect(
+      range.subtracting(removed) == [
+        try dateRange(bs(2080, 1, 1), bs(2080, 1, 7)),
+        try dateRange(bs(2080, 1, 13), bs(2080, 1, 20)),
+      ])
+  }
+
+  @Test("NepaliDateRangeTests.SplitByMonth_RangeAcrossMonths_SplitsCorrectly")
+  func splitByMonthRangeAcrossMonthsSplitsCorrectly() throws {
+    let range = try dateRange(bs(2080, 1, 15), bs(2080, 3, 10))
+    let pieces = range.splitByMonth()
+    #expect(pieces.count == 3)
+    #expect(pieces[0].lowerBound == (try bs(2080, 1, 15)))
+    #expect(pieces[0].upperBound == (try bs(2080, 1, 31)))
+    #expect(pieces[2].lowerBound == (try bs(2080, 3, 1)))
+    #expect(pieces[2].upperBound == (try bs(2080, 3, 10)))
+  }
+
+  @Test("NepaliDateRangeTests.WorkingDays_ReturnsCorrectDays")
+  func workingDaysReturnsCorrectDays() throws {
+    let range = try dateRange(bs(2081, 4, 13), bs(2081, 4, 21))
+    let days = range.workingDays()
+    #expect(days.count == 8)
+    #expect(!days.contains(try bs(2081, 4, 19)))
+  }
+
+  @Test("NepaliDateRangeTests.Demo_RangeOperations")
+  func demoRangeOperations() throws {
+    let range = try dateRange(bs(2081, 4, 10), bs(2081, 4, 20))
+    #expect(range.count == 11)
+    #expect(range.contains(try bs(2081, 4, 15)))
+    #expect(range.intersection(try dateRange(bs(2081, 4, 15), bs(2081, 4, 25))) != nil)
+    #expect(range.subtracting(try dateRange(bs(2081, 4, 12), bs(2081, 4, 18))).count == 2)
+    #expect(range.union(range) == range)
+    #expect(range.description == "2081/04/10 - 2081/04/20")
+  }
 
   @Test("NepaliDateRangeTests.Enumeration_EnumeratesAllDaysInRange")
   func enumerationEnumeratesAllDaysInRange() throws {
