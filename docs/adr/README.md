@@ -10,6 +10,7 @@ Decisions for this repository only. Decisions that bind every port are in the hu
 | [0003](0003-api-conventions-errors-and-parity.md) | API conventions, errors and parity mapping | Accepted |
 | [0004](0004-testing-and-quality-gates.md) | Testing and quality gates | Accepted |
 | [0005](0005-releases.md) | Releases | Accepted |
-| [0006](0006-binary-size-targets.md) | Binary size targets | Accepted |
+| [0006](0006-binary-size-targets.md) | Binary size targets | Superseded in part by 0009 |
 | [0007](0007-docs-check-scope.md) | docs-check checks em dashes and links only | Accepted |
 | [0008](0008-patro-counts-from-the-hub-summary.md) | Read the patro counts from the hub's summary, not from literals (amends 0001 §6) | Accepted |
+| [0009](0009-binary-size-targets-for-the-full-api.md) | Binary size targets for the full API | Accepted |
