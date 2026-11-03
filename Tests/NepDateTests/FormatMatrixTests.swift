@@ -96,8 +96,41 @@ struct FormatMatrixTests {
         form: .long, order: .dmy, separator: .dot, language: .nepali, weekday: true, year: false,
         pad: false)
       let data = try JSONEncoder().encode(style)
+      #expect(String(decoding: data, as: UTF8.self) == "427")
       let back = try JSONDecoder().decode(NepaliDate.FormatStyle.self, from: data)
       #expect(back == style)
+      #expect(try JSONEncoder().encode(NepaliDate.FormatStyle.short) == Data("1536".utf8))
+    }
+
+    @Test("every style survives encoding")
+    func everyStyleRoundTrips() throws {
+      var seen = Set<Data>()
+      for form in [NepaliDate.FormatStyle.Form.short, .long] {
+        for order in [DateOrder.ymd, .ydm, .myd, .mdy, .dym, .dmy] {
+          for separator in [Separator.slash, .backslash, .dot, .underscore, .dash, .space] {
+            for language in [Lang.english, .nepali] {
+              for flags in 0..<8 {
+                let style = NepaliDate.FormatStyle(
+                  form: form, order: order, separator: separator, language: language,
+                  weekday: flags & 1 == 1, year: flags & 2 == 2, pad: flags & 4 == 4)
+                let data = try JSONEncoder().encode(style)
+                #expect(try JSONDecoder().decode(NepaliDate.FormatStyle.self, from: data) == style)
+                seen.insert(data)
+              }
+            }
+          }
+        }
+      }
+      #expect(seen.count == 2 * 6 * 6 * 2 * 8)
+    }
+
+    @Test(
+      "a value that is not a style is rejected",
+      arguments: ["-1", "2048", "12", "96", "\"short\""])
+    func invalidStyle(_ json: String) {
+      #expect(throws: DecodingError.self) {
+        _ = try JSONDecoder().decode(NepaliDate.FormatStyle.self, from: Data(json.utf8))
+      }
     }
 
     @Test("a style works where any FormatStyle is expected")

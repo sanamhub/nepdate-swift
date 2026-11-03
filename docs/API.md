@@ -184,7 +184,10 @@ date.formatted(.init(form: .long, language: .nepali))   // साउन १५, 
 ```
 
 `FormatStyle` has `form`, `order`, `separator`, `language`, `weekday`, `year` and `pad`, and the
-static values `.short` and `.long`. It is `Codable` and `Hashable`.
+static values `.short` and `.long`. It is `Hashable`, and `Codable` as one integer so the
+conformance stays small in apps that never encode a style: bit 0 is the form, bits 1 to 3 the
+order, bits 4 to 6 the separator, bit 7 the language, and bits 8 to 10 `weekday`, `year` and `pad`.
+`FormatStyle.short` encodes as `1536`.
 
 ## Parsing
 

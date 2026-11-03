@@ -239,9 +239,9 @@
     /// ``NepaliDate/long(weekday:year:pad:lang:)`` in one value, so a view can pass it around or
     /// store it. It conforms to `FormatStyle`, so `Text(date, format: style)` and
     /// `date.formatted(style)` both work.
-    public struct FormatStyle: Sendable, Hashable, Codable {
+    public struct FormatStyle: Sendable, Hashable {
       /// Which of the two built-in formats to write.
-      public enum Form: Sendable, Hashable, Codable {
+      public enum Form: Sendable, Hashable {
         /// The three numbers in ``NepaliDate/FormatStyle/order``, separated by
         /// ``NepaliDate/FormatStyle/separator``.
         case short
@@ -326,6 +326,60 @@
     /// - Returns: The default short form.
     public func formatted() -> String {
       formatted(FormatStyle())
+    }
+  }
+
+  // `Foundation.FormatStyle` requires `Codable`. Every conformance in the module stays in every app
+  // that links the core, used or not, so this one is kept small (ADR-0006): the style is one
+  // integer. The synthesized keyed form, with a `CodingKeys` type for the style and a nested keyed
+  // form per option enum, cost tens of kilobytes; an array of option names cost about 2 KB more
+  // than the integer.
+
+  extension NepaliDate.FormatStyle: Codable {
+    /// Decodes a style from the integer ``encode(to:)`` writes.
+    ///
+    /// - Parameter decoder: The decoder to read from.
+    /// - Throws: `DecodingError.dataCorrupted` when the integer is not a style, or the decoder's
+    ///   error when the value is not an integer.
+    public init(from decoder: any Decoder) throws {
+      let container = try decoder.singleValueContainer()
+      let bits = try container.decode(Int.self)
+      let order = bits >> 1 & 7
+      let separator = bits >> 4 & 7
+      guard bits >= 0, bits < 1 << 11, order < 6, separator < 6 else {
+        throw DecodingError.dataCorruptedError(
+          in: container, debugDescription: "\(bits) is not a NepaliDate.FormatStyle")
+      }
+      self.init(
+        form: bits & 1 == 0 ? .short : .long, order: Self.orders[order],
+        separator: Self.separators[separator], language: bits >> 7 & 1 == 0 ? .english : .nepali,
+        weekday: bits >> 8 & 1 == 1, year: bits >> 9 & 1 == 1, pad: bits >> 10 & 1 == 1)
+    }
+
+    /// Encodes the style as one integer, for example `1536` for ``short``.
+    ///
+    /// Bit 0 is the form (1 for long), bits 1 to 3 the order (`ymd`, `ydm`, `myd`, `mdy`, `dym`,
+    /// `dmy` as 0 to 5), bits 4 to 6 the separator (`/`, `\`, `.`, `_`, `-`, space as 0 to 5),
+    /// bit 7 the language (1 for Nepali), and bits 8, 9 and 10 `weekday`, `year` and `pad`.
+    ///
+    /// - Parameter encoder: The encoder to write to.
+    /// - Throws: The encoder's error.
+    public func encode(to encoder: any Encoder) throws {
+      var bits = form == .long ? 1 : 0
+      bits |= (Self.orders.firstIndex(of: order) ?? 0) << 1
+      bits |= (Self.separators.firstIndex(of: separator) ?? 0) << 4
+      bits |= (language == .nepali ? 1 : 0) << 7
+      bits |= (weekday ? 1 : 0) << 8 | (year ? 1 : 0) << 9 | (pad ? 1 : 0) << 10
+      var container = encoder.singleValueContainer()
+      try container.encode(bits)
+    }
+
+    /// Every order, in its encoded position.
+    private static var orders: [DateOrder] { [.ymd, .ydm, .myd, .mdy, .dym, .dmy] }
+
+    /// Every separator, in its encoded position.
+    private static var separators: [Separator] {
+      [.slash, .backslash, .dot, .underscore, .dash, .space]
     }
   }
 

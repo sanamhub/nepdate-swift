@@ -17,6 +17,7 @@ prefix (ADR-0005).
 - `Strideable` conformance with an `Int` stride, `distance(to:)`, `advanced(by:)`, and the `+` and
   `-` day operators.
 - `NepaliDate.FormatStyle`, `.formatted(_:)` and `.formatted()` where Foundation is available.
+  The style is `Codable` as one integer, documented on `encode(to:)`.
 - The full range surface: `singleDay`, `NepaliDateRange(start:dayCount:)`, the three `current*`
   factories, `contains` of a range, `overlaps`, `isAdjacent`, `intersection`, `union`,
   `subtracting`, `splitByMonth`, `splitByFiscalQuarter`, `dates(every:)`, `workingDays`,
@@ -28,7 +29,6 @@ prefix (ADR-0005).
 
 - `NepaliDateRange` conforms to `CustomStringConvertible` and prints `start - end` instead of the
   default collection description.
-- `DateOrder`, `Separator` and `Lang` are `Codable` and `Hashable`, which the format style needs.
 
 ### Breaking changes
 

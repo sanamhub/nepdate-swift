@@ -1,5 +1,5 @@
 /// The order of year, month and day in ``NepaliDate/short(order:separator:pad:lang:)``.
-public enum DateOrder: Sendable, Hashable, Codable {
+public enum DateOrder: Sendable, Hashable {
   /// Year, month, day: `2081/04/15`.
   case ymd
   /// Year, day, month: `2081/15/04`.
@@ -15,7 +15,7 @@ public enum DateOrder: Sendable, Hashable, Codable {
 }
 
 /// The character between the numbers of a short date.
-public enum Separator: Character, Sendable, Hashable, Codable {
+public enum Separator: Character, Sendable, Hashable {
   /// `/`
   case slash = "/"
   /// `\`
