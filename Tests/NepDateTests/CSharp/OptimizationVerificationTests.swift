@@ -150,7 +150,7 @@ struct OptimizationVerificationTests {
   }
 
   // OptimizationVerificationTests.IsLeapYear_ChecksEnglishYearCorrectly (3 rows): D-12, not
-  // ported; year length comes from NepaliDateRange.year(_:).count.
+  // ported; the BS year length is `NepaliDate.yearLength`.
 
   @Test(
     "OptimizationVerificationTests.Constructor_InvalidYearMonthDay_ThrowsException",
@@ -224,11 +224,13 @@ struct OptimizationVerificationTests {
   // OptimizationVerificationTests.IsDefault_DefaultStruct_ReturnsTrue: D-01, no default date.
   // OptimizationVerificationTests.IsDefault_ValidDate_ReturnsFalse: D-01, no default date.
 
-  // C# `date - date` gives a TimeSpan; Swift gives the signed day count (D-07).
+  // C# `date - date` gives a TimeSpan; the named `days(until:)` gives the signed day count, and
+  // the `-` operator gives a `DateDiff` whose `totalDays` keeps the C# direction (D-07).
   @Test("OptimizationVerificationTests.Subtraction_SameDate_ReturnsZeroDays")
   func subtractionSameDateReturnsZeroDays() throws {
     let date = try bs(2080, 5, 15)
     #expect(date.days(until: date) == 0)
+    #expect((date - date).totalDays == 0)
   }
 
   @Test("OptimizationVerificationTests.Subtraction_AdjacentDays_ReturnsOneDay")
@@ -237,6 +239,8 @@ struct OptimizationVerificationTests {
     let b = try bs(2080, 5, 16)
     #expect(a.days(until: b) == 1)
     #expect(b.days(until: a) == -1)
+    #expect((b - a).totalDays == 1)
+    #expect((a - b).totalDays == -1)
   }
 
   @Test("OptimizationVerificationTests.Subtraction_CrossMonth_CorrectDays")

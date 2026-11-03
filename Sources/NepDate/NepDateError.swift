@@ -10,6 +10,8 @@ public struct NepDateError: Error, Sendable, Hashable {
     case invalidDay(monthLength: Int)
     /// The AD date does not exist, for example 2023-02-29.
     case invalidGregorian
+    /// A count or interval is not positive, for example zero days in a range.
+    case invalidArgument
     /// The text has a character that is neither a digit nor a separator.
     case invalidCharacter
     /// The text does not have three number groups.

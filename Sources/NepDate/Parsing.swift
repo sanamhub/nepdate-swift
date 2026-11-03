@@ -59,6 +59,15 @@ extension NepaliDate: LosslessStringConvertible {
 }
 
 extension NepaliDate {
+  /// Parses `string` leniently, as ``parseLenient(_:)`` does, or returns `nil`.
+  ///
+  /// - Parameter string: Text a person typed, for example `15 Shrawan 2080`.
+  @inlinable
+  public init?(lenient string: some StringProtocol) {
+    guard let date = try? NepaliDate.parseLenient(string) else { return nil }
+    self = date
+  }
+
   /// Parses year, month and day in that order (PARSING §1).
   ///
   /// Digits may be ASCII or Devanagari, mixed (D-05). The numbers are separated by any of

@@ -1,5 +1,5 @@
 /// The order of year, month and day in ``NepaliDate/short(order:separator:pad:lang:)``.
-public enum DateOrder: Sendable {
+public enum DateOrder: Sendable, Hashable {
   /// Year, month, day: `2081/04/15`.
   case ymd
   /// Year, day, month: `2081/15/04`.
@@ -15,7 +15,7 @@ public enum DateOrder: Sendable {
 }
 
 /// The character between the numbers of a short date.
-public enum Separator: Character, Sendable {
+public enum Separator: Character, Sendable, Hashable {
   /// `/`
   case slash = "/"
   /// `\`
@@ -219,11 +219,17 @@ extension NepaliDate {
     while i != end {
       let byte = utf8[i]
       switch byte {
-      case 0x5C:  // "\": the next character is literal; at the very end it writes nothing
+      case 0x5C:  // "\": the next character is literal; at the very end it writes "\"
         writeLiteral(utf8[literalStart..<i], to: &sink)
         let next = utf8.index(after: i)
-        literalStart = next
-        i = next == end ? end : skipScalar(utf8, from: next)
+        if next == end {
+          sink.appendASCII(0x5C)
+          literalStart = end
+          i = end
+        } else {
+          literalStart = next
+          i = skipScalar(utf8, from: next)
+        }
       case 0x27:  // "'": literal text up to the next quote, or to the end
         writeLiteral(utf8[literalStart..<i], to: &sink)
         let textStart = utf8.index(after: i)

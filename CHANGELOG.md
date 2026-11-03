@@ -6,6 +6,38 @@ prefix (ADR-0005).
 
 ## [Unreleased]
 
+### Added
+
+- `NepaliDate.yearLength`, the length of the BS year, 364 to 367.
+- `NepaliDate.isToday(in:)`, `isYesterday(in:)` and `isTomorrow(in:)`, each with an explicit zone.
+- `NepaliDate(ymd:)` and `NepaliDate.ymd` for the `YYYYMMDD` integer form, and
+  `NepaliDate(lenient:)` for a failable lenient parse.
+- Ordered batch conversion both ways: `NepaliDate.fromGregorian(_:in:)`,
+  `NepaliDate.gregorianDates(from:in:)` for strings and for dates.
+- `Strideable` conformance with an `Int` stride, `distance(to:)`, `advanced(by:)`, and the `+` and
+  `-` day operators.
+- `NepaliDate.FormatStyle`, `.formatted(_:)` and `.formatted()` where Foundation is available.
+  The style is `Codable` as one integer, documented on `encode(to:)`.
+- The full range surface: `singleDay`, `NepaliDateRange(start:dayCount:)`, the three `current*`
+  factories, `contains` of a range, `overlaps`, `isAdjacent`, `intersection`, `union`,
+  `subtracting`, `splitByMonth`, `splitByFiscalQuarter`, `dates(every:)`, `workingDays`,
+  `weekendDays`, `description` and `formatted`.
+- `NepDateError.Kind.invalidArgument` for a day count or interval below 1.
+- `docs/API.md` documents every public member with an example, grouped like the hub inventory.
+
+### Changed
+
+- `NepaliDateRange` conforms to `CustomStringConvertible` and prints `start - end` instead of the
+  default collection description.
+
+### Breaking changes
+
+- The range index type is now `Int` instead of `Int32`, matching Swift collections. Migration:
+  replace `Int32` range indices with `Int`.
+- A trailing `\` in a format pattern writes a literal `\`. Migration: remove the trailing `\` when the old output without it was intended.
+- `NepDateError.Kind` has a new `.invalidArgument` case. Migration: add a case for `.invalidArgument`
+  to exhaustive switches over `NepDateError.Kind`.
+
 ## [0.1.0-rc.1] - 2026-11-03
 
 ### Changed

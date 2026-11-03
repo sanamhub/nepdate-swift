@@ -10,6 +10,7 @@ func kindName(_ kind: NepDateError.Kind) -> String {
   case .invalidMonth: return "InvalidMonth"
   case .invalidDay: return "InvalidDay"
   case .invalidGregorian: return "InvalidGregorian"
+  case .invalidArgument: return "InvalidArgument"
   case .invalidCharacter: return "InvalidCharacter"
   case .wrongGroupCount: return "WrongGroupCount"
   case .numberTooLong: return "NumberTooLong"
@@ -133,7 +134,7 @@ struct FormattingTests {
   @Test("csharp-golden/format-pattern.tsv")
   func goldenPatterns() throws {
     let file = try VectorFile("csharp-golden/format-pattern.tsv", separator: "\t")
-    #expect(file.rows.count == 451)
+    #expect(file.rows.count == 452)
     var log = FailureLog()
     var checked = 0
     var d04 = 0
@@ -158,7 +159,7 @@ struct FormattingTests {
       checked += 1
     }
     #expect(d04 == 7)
-    #expect(checked + d04 == 451)
+    #expect(checked + d04 == 452)
     #expect(log.count == 0, "\(log.summary)")
   }
 
@@ -175,7 +176,7 @@ struct FormattingTests {
     #expect(date.format("s", lang: .nepali) == "२०८१-०४-१५")
     #expect(date.format("") == "2081/04/15" && date.format("G") == "2081/04/15")
     #expect(date.format("D") == "Shrawan 15, 2081")
-    #expect(date.format("yyyy\\") == "2081")
+    #expect(date.format("yyyy\\") == "2081\\")
     #expect(date.format("'unterminated yyyy") == "unterminated yyyy")
     #expect(date.format("MMMM ddd, साल yyyy", lang: .nepali) == "साउन १५, साल २०८१")
     #expect(date.format("\\साउन") == "साउन")
