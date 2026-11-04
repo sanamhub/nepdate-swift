@@ -39,9 +39,10 @@ Nepal's solar Bikram Sambat; its months don't match. Apple has no Nepali calenda
 ([docs/competitors.md](https://github.com/sanamhub/nepdate-swift/blob/main/docs/competitors.md)).
 Use this package for Nepali dates.
 
-> **Status:** 0.2.0-rc.1, a release candidate. The API is listed in
-> [docs/API.md](https://github.com/sanamhub/nepdate-swift/blob/main/docs/API.md) and may still change before 0.2.0.
-> Patro data (tithi, holidays, events) is informational, not an official calendar.
+> **Status:** 1.0.0-rc.1, the release candidate on the 1.0 line. The API is listed in
+> [docs/API.md](https://github.com/sanamhub/nepdate-swift/blob/main/docs/API.md) and is stable from
+> 1.0 (hub ADR-0009). Patro data (tithi, holidays, events) is informational, not an official
+> calendar.
 
 ## Install
 
@@ -49,7 +50,7 @@ Add the package to `Package.swift`. SwiftPM only picks a pre-release when the re
 one:
 
 ```swift
-.package(url: "https://github.com/sanamhub/nepdate-swift", exact: "0.2.0-rc.1")
+.package(url: "https://github.com/sanamhub/nepdate-swift", exact: "1.0.0-rc.1")
 ```
 
 Then depend on `NepDate`, or on `NepDatePatro` as well for tithi, holidays and events:
