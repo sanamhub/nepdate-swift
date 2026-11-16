@@ -35,7 +35,7 @@ idle laptop.
 | Power plan | Ultimate Performance, on AC |
 | Affinity | logical CPU 2, `taskset -c 2` on the whole `swift package benchmark` command |
 | Swift | 6.4.1 (swift-6.4.1-RELEASE), x86_64-unknown-linux-gnu |
-| package-benchmark | 1.36.4, target `NepDateBenchmarks`, release products |
+| package-benchmark | 1.38.2, target `NepDateBenchmarks`, release products |
 | Date of run | 2026-11-16 |
 | Idle gate before the run | 4.7 percent average, 9.1 peak (30 one-second samples, Windows side) |
 | Load during the run | 9.2 percent average, 31.9 peak over 72 one-second samples; the single sample above 30 percent is the third second, at the start |

@@ -31,7 +31,7 @@ let package = Package(
   platforms: [.macOS(.v13)],
   dependencies: [
     .package(path: ".."),
-    .package(url: "https://github.com/ordo-one/benchmark", exact: "1.36.4"),
+    .package(url: "https://github.com/ordo-one/benchmark", exact: "1.38.2"),
   ],
   targets: [
     .target(
