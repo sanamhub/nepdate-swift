@@ -36,8 +36,8 @@ nothing else is needed. A green scheduled run says nothing and opens nothing.
 
 ## Pre-releases
 
-A tag such as `0.1.0-beta.1` goes through the same steps. Its changelog section is
-`## [0.1.0-beta.1] - YYYY-MM-DD`; a stable section does not satisfy a pre-release tag and the other
+A tag such as `1.1.0-beta.1` goes through the same steps. Its changelog section is
+`## [1.1.0-beta.1] - YYYY-MM-DD`; a stable section does not satisfy a pre-release tag and the other
 way round. The GitHub Release is marked as a pre-release. SwiftPM never picks a pre-release for a
 `from:` requirement unless the requirement itself names one, so users opt in with
 `exact: "0.1.0-beta.1"` or `from: "0.1.0-beta.1"`.
