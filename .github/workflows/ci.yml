@@ -165,6 +165,18 @@ jobs:
           grep -q "does not resolve" docs.log
           cp "$RUNNER_TEMP/README.md.orig" README.md
 
+  # Package.swift says swift-tools-version 6.0, so the oldest supported compiler runs the same gates.
+  linux-oldest:
+    runs-on: ubuntu-24.04
+    container: swift:6.0
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - run: swift --version
+      - run: ./scripts/ci.sh
+
   windows:
     runs-on: windows-latest
     timeout-minutes: 45

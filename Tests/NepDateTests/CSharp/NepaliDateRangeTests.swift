@@ -38,21 +38,21 @@ struct NepaliDateRangeTests {
     let start = try bs(2080, 1, 1)
     let range = try NepaliDateRange(start: start, dayCount: 10)
     #expect(range.lowerBound == start && range.count == 10)
-    #expect(range.upperBound == (try start.adding(days: 9)))
+    #expect(try range.upperBound == start.adding(days: 9))
   }
 
   @Test("NepaliDateRangeTests.ForMonth_CreatesCorrectRange")
   func forMonthCreatesCorrectRange() throws {
     let range = try NepaliDateRange.month(year: 2080, month: 1)
-    #expect(range.lowerBound == (try bs(2080, 1, 1)))
-    #expect(range.upperBound == (try bs(2080, 1, 1).lastDayOfMonth))
+    #expect(try range.lowerBound == bs(2080, 1, 1))
+    #expect(try range.upperBound == bs(2080, 1, 1).lastDayOfMonth)
   }
 
   @Test("NepaliDateRangeTests.ForFiscalYear_CreatesCorrectRange")
   func forFiscalYearCreatesCorrectRange() throws {
     let range = try FiscalYear(startYear: 2080).range()
-    #expect(range.lowerBound == (try bs(2080, 4, 1)))
-    #expect(range.upperBound == (try bs(2081, 3, 1).lastDayOfMonth))
+    #expect(try range.lowerBound == bs(2080, 4, 1))
+    #expect(try range.upperBound == bs(2081, 3, 1).lastDayOfMonth)
   }
 
   @Test("NepaliDateRangeTests.Contains_DateInRange_ReturnsTrue")
@@ -99,14 +99,14 @@ struct NepaliDateRangeTests {
   func intersectOverlappingRangesReturnsIntersection() throws {
     let a = try dateRange(bs(2080, 1, 1), bs(2080, 1, 15))
     let b = try dateRange(bs(2080, 1, 10), bs(2080, 1, 20))
-    #expect(a.intersection(b) == (try dateRange(bs(2080, 1, 10), bs(2080, 1, 15))))
+    #expect(try a.intersection(b) == dateRange(bs(2080, 1, 10), bs(2080, 1, 15)))
   }
 
   @Test("NepaliDateRangeTests.Union_OverlappingRanges_ReturnsUnion")
   func unionOverlappingRangesReturnsUnion() throws {
     let a = try dateRange(bs(2080, 1, 1), bs(2080, 1, 15))
     let b = try dateRange(bs(2080, 1, 10), bs(2080, 1, 20))
-    #expect(a.union(b) == (try dateRange(bs(2080, 1, 1), bs(2080, 1, 20))))
+    #expect(try a.union(b) == dateRange(bs(2080, 1, 1), bs(2080, 1, 20)))
     #expect(b.union(a) == a.union(b))
   }
 
@@ -115,9 +115,9 @@ struct NepaliDateRangeTests {
     let range = try dateRange(bs(2080, 1, 1), bs(2080, 1, 20))
     let removed = try dateRange(bs(2080, 1, 8), bs(2080, 1, 12))
     #expect(
-      range.subtracting(removed) == [
-        try dateRange(bs(2080, 1, 1), bs(2080, 1, 7)),
-        try dateRange(bs(2080, 1, 13), bs(2080, 1, 20)),
+      try range.subtracting(removed) == [
+        dateRange(bs(2080, 1, 1), bs(2080, 1, 7)),
+        dateRange(bs(2080, 1, 13), bs(2080, 1, 20)),
       ])
   }
 
@@ -126,10 +126,10 @@ struct NepaliDateRangeTests {
     let range = try dateRange(bs(2080, 1, 15), bs(2080, 3, 10))
     let pieces = range.splitByMonth()
     #expect(pieces.count == 3)
-    #expect(pieces[0].lowerBound == (try bs(2080, 1, 15)))
-    #expect(pieces[0].upperBound == (try bs(2080, 1, 31)))
-    #expect(pieces[2].lowerBound == (try bs(2080, 3, 1)))
-    #expect(pieces[2].upperBound == (try bs(2080, 3, 10)))
+    #expect(try pieces[0].lowerBound == bs(2080, 1, 15))
+    #expect(try pieces[0].upperBound == bs(2080, 1, 31))
+    #expect(try pieces[2].lowerBound == bs(2080, 3, 1))
+    #expect(try pieces[2].upperBound == bs(2080, 3, 10))
   }
 
   @Test("NepaliDateRangeTests.WorkingDays_ReturnsCorrectDays")
@@ -155,6 +155,6 @@ struct NepaliDateRangeTests {
   func enumerationEnumeratesAllDaysInRange() throws {
     let days = Array(try dateRange(bs(2080, 1, 1), bs(2080, 1, 10)))
     #expect(days.count == 10)
-    for i in 0..<10 { #expect(days[i] == (try bs(2080, 1, i + 1))) }
+    for i in 0..<10 { #expect(try days[i] == bs(2080, 1, i + 1)) }
   }
 }

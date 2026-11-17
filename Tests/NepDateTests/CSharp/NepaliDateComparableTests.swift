@@ -37,7 +37,7 @@ struct NepaliDateComparableTests {
 
   @Test("NepaliDateComparableTests.CompareTo_Generic_Same_ReturnsZero")
   func compareToGenericSameReturnsZero() throws {
-    #expect(d1 == (try bs(2081, 1, 1)))
+    #expect(try d1 == bs(2081, 1, 1))
   }
 
   @Test("NepaliDateComparableTests.CompareTo_Generic_Later_ReturnsPositive")

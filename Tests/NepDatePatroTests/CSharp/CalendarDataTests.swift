@@ -78,8 +78,8 @@ struct CalendarDataTests {
     // PATRO §3: one tithi for every day from the summary's first tithi day to its last, no gap.
     let summary = try PatroSummary()
     let withTithi = Patro.coverage.filter { $0.calendarInfo.tithi != nil }
-    #expect(withTithi.first == (try NepaliDate.parse(summary.tithiFirstDay)))
-    #expect(withTithi.last == (try NepaliDate.parse(summary.tithiLastDay)))
+    #expect(try withTithi.first == NepaliDate.parse(summary.tithiFirstDay))
+    #expect(try withTithi.last == NepaliDate.parse(summary.tithiLastDay))
     #expect(zip(withTithi, withTithi.dropFirst()).allSatisfy { $0.days(until: $1) == 1 })
   }
 

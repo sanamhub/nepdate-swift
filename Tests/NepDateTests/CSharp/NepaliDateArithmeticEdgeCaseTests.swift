@@ -34,7 +34,7 @@ struct NepaliDateArithmeticEdgeCaseTests {
   func addDaysNegativeAcrossYearBoundary() throws {
     let result = try bs(2081, 1, 1).adding(days: -1)
     #expect(result.year == 2080 && result.month == 12)
-    #expect(result.day == (try bs(2080, 12, 1).monthLength))
+    #expect(try result.day == bs(2080, 12, 1).monthLength)
   }
 
   @Test("NepaliDateArithmeticEdgeCaseTests.AddDays_LargePositiveValue_IsCorrect")
@@ -115,7 +115,7 @@ struct NepaliDateArithmeticEdgeCaseTests {
       let early = try NepaliDate(utc(2023, 9, 1, seconds: 0), in: utcZone)
       let late = try NepaliDate(utc(2023, 9, 1, seconds: 23 * 3600 + 59 * 60 + 59), in: utcZone)
       #expect(early == late)
-      #expect(early == (try bs(2080, 5, 15)))
+      #expect(try early == bs(2080, 5, 15))
     }
   #endif
 

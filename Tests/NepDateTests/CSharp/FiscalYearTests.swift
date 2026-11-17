@@ -33,8 +33,8 @@ struct FiscalYearTests {
   @Test("FiscalYearTests.FiscalYearStartAndEndDate_OnNepaliDateInstance_ReturnsCorrectDates")
   func startAndEndOnInstance() throws {
     let range = try bs(2080, 6, 15).fiscalYear.range()
-    #expect(range.lowerBound == (try bs(2080, 4, 1)))
-    #expect(range.upperBound == (try bs(2081, 3, 1).lastDayOfMonth))
+    #expect(try range.lowerBound == bs(2080, 4, 1))
+    #expect(try range.upperBound == bs(2081, 3, 1).lastDayOfMonth)
   }
 
   @Test("FiscalYearTests.FiscalYearStartDate_OnNepaliDateInstance_ReturnsCorrectDate")
@@ -51,21 +51,21 @@ struct FiscalYearTests {
   func quarterStartAndEnd() throws {
     // Month 5 (Bhadra) is in Q1.
     let range = try FiscalYear(startYear: 2080).range(of: bs(2080, 5, 1).quarter)
-    #expect(range.lowerBound == (try bs(2080, 4, 1)))
-    #expect(range.upperBound == (try bs(2080, 6, 1).lastDayOfMonth))
+    #expect(try range.lowerBound == bs(2080, 4, 1))
+    #expect(try range.upperBound == bs(2080, 6, 1).lastDayOfMonth)
   }
 
   @Test("FiscalYearTests.GetFiscalYearQuarterStartDate_ValidYearAndMonth_ReturnsCorrectDate")
   func quarterStart() throws {
     // Month 8 (Mangsir) is in Q2.
     let range = try FiscalYear(startYear: 2080).range(of: bs(2080, 8, 1).quarter)
-    #expect(range.lowerBound == (try bs(2080, 7, 1)))
+    #expect(try range.lowerBound == bs(2080, 7, 1))
   }
 
   @Test("FiscalYearTests.GetFiscalYearQuarterEndDate_ValidYearAndMonth_ReturnsCorrectDate")
   func quarterEnd() throws {
     // Month 11 (Falgun) is in Q3.
     let range = try FiscalYear(startYear: 2080).range(of: bs(2080, 11, 1).quarter)
-    #expect(range.upperBound == (try bs(2080, 12, 1).lastDayOfMonth))
+    #expect(try range.upperBound == bs(2080, 12, 1).lastDayOfMonth)
   }
 }

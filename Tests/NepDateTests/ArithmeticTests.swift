@@ -197,8 +197,8 @@ struct ArithmeticTests {
   func ranges() throws {
     let shrawan = try NepaliDateRange.month(year: 2081, month: 4)
     #expect(shrawan.count == 32)
-    #expect(shrawan.lowerBound == (try bs(2081, 4, 1)))
-    #expect(shrawan.upperBound == (try bs(2081, 4, 32)))
+    #expect(try shrawan.lowerBound == bs(2081, 4, 1))
+    #expect(try shrawan.upperBound == bs(2081, 4, 32))
     let a = try bs(2081, 4, 1)
     let b = try bs(2081, 4, 2)
     #expect(NepaliDateRange(b, a) == nil)

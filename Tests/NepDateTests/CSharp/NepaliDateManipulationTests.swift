@@ -29,7 +29,7 @@ struct NepaliDateManipulationTests {
   func addMonthsReturnsCorrectDate(row: AddMonthsRow) throws {
     let result = try bs(row.date[0], row.date[1], row.date[2])
       .adding(months: row.months, overflow: row.spill ? .spill : .clamp)
-    #expect(result == (try bs(row.expected[0], row.expected[1], row.expected[2])))
+    #expect(try result == bs(row.expected[0], row.expected[1], row.expected[2]))
   }
 
   @Test(
@@ -40,7 +40,7 @@ struct NepaliDateManipulationTests {
     ])
   func addDaysReturnsCorrectDate(row: [Int]) throws {
     let result = try bs(row[0], row[1], row[2]).adding(days: row[3])
-    #expect(result == (try bs(row[4], row[5], row[6])))
+    #expect(try result == bs(row[4], row[5], row[6]))
   }
 
   // C# `Subtract` returns a TimeSpan; Swift returns the signed day count (D-07).

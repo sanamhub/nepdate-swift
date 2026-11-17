@@ -13,7 +13,7 @@ struct NepaliDateRangeExtendedTests {
   @Test("NepaliDateRangeExtendedTests.ForCalendarYear_StartsAtBaishakhOne_EndsAtChaitraEnd")
   func forCalendarYearStartsAndEnds() throws {
     let range = try NepaliDateRange.year(2080)
-    #expect(range.lowerBound == (try bs(2080, 1, 1)))
+    #expect(try range.lowerBound == bs(2080, 1, 1))
     #expect(range.upperBound.year == 2080 && range.upperBound.month == 12)
     #expect(range.upperBound.day == range.upperBound.monthLength)
   }
@@ -81,7 +81,7 @@ struct NepaliDateRangeExtendedTests {
       let utc = try zone("UTC")
       let today = NepaliDate.today(in: utc, now: fixedClock)
       let range = try NepaliDateRange.currentCalendarYear(in: utc, now: fixedClock)
-      #expect(range.lowerBound == (try bs(today.year, 1, 1)))
+      #expect(try range.lowerBound == bs(today.year, 1, 1))
     }
   #endif
 
@@ -103,10 +103,10 @@ struct NepaliDateRangeExtendedTests {
     let range = try dateRange(bs(2081, 6, 15), bs(2081, 7, 15))
     let pieces = range.splitByFiscalQuarter()
     #expect(pieces.count == 2)
-    #expect(pieces[0].lowerBound == (try bs(2081, 6, 15)))
-    #expect(pieces[0].upperBound == (try bs(2081, 6, 30)))
-    #expect(pieces[1].lowerBound == (try bs(2081, 7, 1)))
-    #expect(pieces[1].upperBound == (try bs(2081, 7, 15)))
+    #expect(try pieces[0].lowerBound == bs(2081, 6, 15))
+    #expect(try pieces[0].upperBound == bs(2081, 6, 30))
+    #expect(try pieces[1].lowerBound == bs(2081, 7, 1))
+    #expect(try pieces[1].upperBound == bs(2081, 7, 15))
   }
 
   @Test("NepaliDateRangeExtendedTests.SplitByFiscalQuarter_FullFiscalYear_ReturnsFourRanges")
@@ -173,15 +173,15 @@ struct NepaliDateRangeExtendedTests {
   func weekendDaysIncludeSundayTrueReturnsBoth() throws {
     let range = try dateRange(bs(2081, 4, 13), bs(2081, 4, 21))
     #expect(
-      range.weekendDays(includingSunday: true) == [
-        try bs(2081, 4, 13), try bs(2081, 4, 19), try bs(2081, 4, 20),
+      try range.weekendDays(includingSunday: true) == [
+        bs(2081, 4, 13), bs(2081, 4, 19), bs(2081, 4, 20),
       ])
   }
 
   @Test("NepaliDateRangeExtendedTests.WeekendDays_IncludeSundayFalse_ReturnsOnlySaturday")
   func weekendDaysIncludeSundayFalseReturnsOnlySaturday() throws {
     let range = try dateRange(bs(2081, 4, 13), bs(2081, 4, 21))
-    #expect(range.weekendDays(includingSunday: false) == [try bs(2081, 4, 19)])
+    #expect(try range.weekendDays(includingSunday: false) == [bs(2081, 4, 19)])
   }
 
   @Test("NepaliDateRangeExtendedTests.WeekendDays_RangeWithNoWeekend_ReturnsEmpty")
@@ -258,7 +258,7 @@ struct NepaliDateRangeExtendedTests {
   func unionNonOverlappingRangesSpansEntireGap() throws {
     let a = try dateRange(bs(2080, 1, 1), bs(2080, 1, 10))
     let b = try dateRange(bs(2080, 2, 1), bs(2080, 2, 10))
-    #expect(a.union(b) == (try dateRange(bs(2080, 1, 1), bs(2080, 2, 10))))
+    #expect(try a.union(b) == dateRange(bs(2080, 1, 1), bs(2080, 2, 10)))
   }
 
   @Test("NepaliDateRangeExtendedTests.IsAdjacentTo_GapBetweenRanges_ReturnsFalse")
@@ -298,14 +298,14 @@ struct NepaliDateRangeExtendedTests {
   func exceptExcludeOverlapsStartReturnsRightPart() throws {
     let range = try dateRange(bs(2080, 1, 1), bs(2080, 1, 20))
     let other = try dateRange(bs(2080, 1, 1), bs(2080, 1, 10))
-    #expect(range.subtracting(other) == [try dateRange(bs(2080, 1, 11), bs(2080, 1, 20))])
+    #expect(try range.subtracting(other) == [dateRange(bs(2080, 1, 11), bs(2080, 1, 20))])
   }
 
   @Test("NepaliDateRangeExtendedTests.Except_ExcludeOverlapsEnd_ReturnsLeftPart")
   func exceptExcludeOverlapsEndReturnsLeftPart() throws {
     let range = try dateRange(bs(2080, 1, 1), bs(2080, 1, 20))
     let other = try dateRange(bs(2080, 1, 10), bs(2080, 1, 20))
-    #expect(range.subtracting(other) == [try dateRange(bs(2080, 1, 1), bs(2080, 1, 9))])
+    #expect(try range.subtracting(other) == [dateRange(bs(2080, 1, 1), bs(2080, 1, 9))])
   }
 
   @Test("NepaliDateRangeExtendedTests.ToString_DefaultFormat_IsStartDashEnd")

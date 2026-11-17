@@ -29,16 +29,16 @@
     @Test("today at 2024-07-30 18:30 UTC, real zone database")
     func todayWithZoneDatabase() throws {
       let utcZone = try zone("UTC")
-      #expect(NepaliDate.today(in: utcZone, now: fixedClock) == (try bs(2081, 4, 15)))
-      #expect(NepaliDate.today(in: nil, now: fixedClock) == (try bs(2081, 4, 16)))
+      #expect(try NepaliDate.today(in: utcZone, now: fixedClock) == bs(2081, 4, 15))
+      #expect(try NepaliDate.today(in: nil, now: fixedClock) == bs(2081, 4, 16))
     }
 
     @Test("today at 2024-07-30 18:30 UTC, zone database without Asia/Kathmandu")
     func todayWithoutNepalZone() throws {
       let utcZone = try zone("UTC")
       let none: (String) -> TimeZone? = { _ in nil }
-      #expect(NepaliDate.today(in: utcZone, now: fixedClock, lookup: none) == (try bs(2081, 4, 15)))
-      #expect(NepaliDate.today(in: nil, now: fixedClock, lookup: none) == (try bs(2081, 4, 16)))
+      #expect(try NepaliDate.today(in: utcZone, now: fixedClock, lookup: none) == bs(2081, 4, 15))
+      #expect(try NepaliDate.today(in: nil, now: fixedClock, lookup: none) == bs(2081, 4, 16))
       #expect(NepaliDate.nepalOffset(at: fixedClock, lookup: none) == 20_700)
       #expect(NepaliDate.nepalOffset(at: fixedClock) { TimeZone(identifier: $0) } == 20_700)
     }
@@ -51,7 +51,7 @@
       let after = try NepaliDate(Date(), in: utcZone)
       #expect(before <= today && today <= after)
       // 2026 or later is BS 2083 or later.
-      #expect(NepaliDate.today() >= (try bs(2083, 1, 1)))
+      #expect(try NepaliDate.today() >= bs(2083, 1, 1))
     }
 
     @Test("a clock outside the range gives min or max")
@@ -86,7 +86,7 @@
     func firstDay() throws {
       let date = try NepaliDate(Date(timeIntervalSince1970: -45_920 * 86_400), in: try zone("UTC"))
       #expect(date == .min)
-      #expect(date == (try bs(1901, 1, 1)))
+      #expect(try date == bs(1901, 1, 1))
     }
 
     @Test("init(_:in:) uses floor division and checks both ends")
@@ -94,7 +94,7 @@
       let utcZone = try zone("UTC")
       // One second before 1970-01-01 is 1969-12-31.
       let lastOf1969 = try NepaliDate(Date(timeIntervalSince1970: -1), in: utcZone)
-      #expect(lastOf1969 == (try ad(1969, 12, 31)))
+      #expect(try lastOf1969 == ad(1969, 12, 31))
       #expect(try NepaliDate(utc(2143, 4, 15, seconds: 86_399), in: utcZone) == .max)
       #expect(NepaliDate.min.date(in: utcZone) == utc(1844, 4, 11))
       expectError(.outOfRange) {
