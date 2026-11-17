@@ -99,7 +99,7 @@ struct NepaliDateConstructionTests {
 
   @Test("NepaliDateConstructionTests.TryParse_ValidString_ReturnsTrueWithCorrectDate")
   func tryParseValidStringReturnsTrueWithCorrectDate() throws {
-    #expect(NepaliDate("2080/05/15") == (try bs(2080, 5, 15)))
+    #expect(try NepaliDate("2080/05/15") == bs(2080, 5, 15))
   }
 
   @Test(

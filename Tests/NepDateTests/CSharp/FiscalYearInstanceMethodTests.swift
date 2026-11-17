@@ -82,7 +82,7 @@ struct FiscalYearInstanceMethodTests {
   @Test("FiscalYearInstanceMethodTests.FiscalYearStartAndEndDate_DateInQ2_ReturnsBothBoundaries")
   func startAndEndInQ2() throws {
     let range = try bs(2080, 8, 15).fiscalYear.range()
-    #expect(range.lowerBound == (try bs(2080, 4, 1)))
+    #expect(try range.lowerBound == bs(2080, 4, 1))
     #expect(range.upperBound.year == 2081 && range.upperBound.month == 3)
   }
 
@@ -91,7 +91,7 @@ struct FiscalYearInstanceMethodTests {
   )
   func startAndEndInQ4() throws {
     let range = try bs(2081, 2, 10).fiscalYear.range()
-    #expect(range.lowerBound == (try bs(2080, 4, 1)))
+    #expect(try range.lowerBound == bs(2080, 4, 1))
     #expect(range.upperBound.year == 2081 && range.upperBound.month == 3)
   }
 
@@ -151,7 +151,7 @@ struct FiscalYearInstanceMethodTests {
   )
   func quarterStartAndEndExplicitSecond() throws {
     let range = try quarter(bs(2080, 5, 15), .q2)
-    #expect(range.lowerBound == (try bs(2080, 7, 1)))
+    #expect(try range.lowerBound == bs(2080, 7, 1))
     #expect(range.upperBound.year == 2080 && range.upperBound.month == 9)
   }
 
@@ -160,7 +160,7 @@ struct FiscalYearInstanceMethodTests {
   )
   func quarterStartAndEndExplicitThird() throws {
     let range = try quarter(bs(2080, 5, 15), .q3)
-    #expect(range.lowerBound == (try bs(2080, 10, 1)))
+    #expect(try range.lowerBound == bs(2080, 10, 1))
     #expect(range.upperBound.month == 12)
   }
 

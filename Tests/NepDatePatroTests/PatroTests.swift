@@ -97,8 +97,8 @@ struct PatroTests {
   @Test("coverage is the summary's first day to last day")
   func coverage() throws {
     let summary = try PatroSummary()
-    #expect(Patro.coverage.lowerBound == (try NepaliDate.parse(summary.firstDay)))
-    #expect(Patro.coverage.upperBound == (try NepaliDate.parse(summary.lastDay)))
+    #expect(try Patro.coverage.lowerBound == NepaliDate.parse(summary.firstDay))
+    #expect(try Patro.coverage.upperBound == NepaliDate.parse(summary.lastDay))
     #expect(Int(PatroData.coverageFirst) == summary.firstSerial)
     #expect(Int(PatroData.coverageLast) == summary.lastSerial)
     #expect(Patro.coverage.count == summary.days)
@@ -137,9 +137,9 @@ struct PatroTests {
   @Test("PatroEvents equality and hashing compare names in order")
   func eventsEquality() throws {
     let a = try bs(2081, 1, 1).calendarInfo
-    #expect(a == (try bs(2081, 1, 1)).calendarInfo)
-    #expect(a.events.hashValue == (try bs(2081, 1, 1)).calendarInfo.events.hashValue)
-    #expect(a.events != (try bs(2081, 2, 15)).calendarInfo.events)
+    #expect(try a == bs(2081, 1, 1).calendarInfo)
+    #expect(try a.events.hashValue == bs(2081, 1, 1).calendarInfo.events.hashValue)
+    #expect(try a.events != bs(2081, 2, 15).calendarInfo.events)
     // Two days without events have equal (empty) lists, though their offsets differ.
     let none1 = try bs(2081, 1, 2).calendarInfo.events
     let none2 = NepaliDate.min.calendarInfo.events
