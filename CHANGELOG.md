@@ -4,6 +4,10 @@ All notable changes to this package are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions are SwiftPM tags without a `v`
 prefix (ADR-0005).
 
+## [1.0.0] - 2026-11-18
+
+No changes since 1.0.0-rc.1.
+
 ## [1.0.0-rc.1] - 2026-11-04
 
 ### Changed
