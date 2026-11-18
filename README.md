@@ -43,11 +43,10 @@ The API is listed in [docs/API.md](https://github.com/sanamhub/nepdate-swift/blo
 
 ## Install
 
-Add the package to `Package.swift`. SwiftPM only picks a pre-release when the requirement names
-one:
+Add the package to `Package.swift`:
 
 ```swift
-.package(url: "https://github.com/sanamhub/nepdate-swift", exact: "1.0.0-rc.1")
+.package(url: "https://github.com/sanamhub/nepdate-swift", from: "1.0.0")
 ```
 
 Then depend on `NepDate`, or on `NepDatePatro` as well for tithi, holidays and events:
