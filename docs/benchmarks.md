@@ -57,18 +57,18 @@ macOS arm64 only.
 
 | ID | Operation | p50 ns/op | p90 ns/op | C# .NET 10 ns/op, Windows | ratio Swift/C# |
 |---|---|---:|---:|---:|---:|
-| B1 | BS to AD | 12.6 | 12.9 | 13.27 | 0.95 |
-| B2 | AD to BS | 10.2 | 10.7 | 18.70 | 0.55 |
-| B3 | add 1000 days | 6.7 | 7.8 | 20.06 | 0.33 |
-| B4 | add 13 months, clamp | 5.7 | 6.2 | 19.30 | 0.30 |
-| B5 | long format, Nepali, weekday | 359.4 | 406.2 | 139.04 | 2.58 |
-| B6 | strict parse | 22.8 | 23.4 | 21.13 | 1.08 |
-| B7 | patro info | 45.2 | 46.5 | 48.63 | 0.93 |
-| B8 | patro month grid | 1,578.1 | 1,750.0 | 3,274.50 | 0.48 |
+| B1 | BS to AD | 12.6 | 12.9 | 5.60 | 2.25 |
+| B2 | AD to BS | 10.2 | 10.7 | 5.90 | 1.73 |
+| B3 | add 1000 days | 6.7 | 7.8 | 2.79 | 2.40 |
+| B4 | add 13 months, clamp | 5.7 | 6.2 | 2.45 | 2.33 |
+| B5 | long format, Nepali, weekday | 359.4 | 406.2 | 29.96 | 12.00 |
+| B6 | strict parse | 22.8 | 23.4 | 7.28 | 3.13 |
+| B7 | patro info | 45.2 | 46.5 | 16.46 | 2.75 |
+| B8 | patro month grid | 1,578.1 | 1,750.0 | 633.13 | 2.49 |
 
 B5a, B7-sorted and MonthRange on the same run: 312.5, 72.6 and 70.9 ns/op at p50. BENCHMARK section 6
-asks for B1, B2 and B7 within 1.5 times C# NepDate: B1 is 0.95, B2 is 0.55 and B7 is 0.93, so the
-target holds on the reference CPU. Allocation was not measured here; the runner run below measured
+asks for B1, B2 and B7 within 1.5 times C# NepDate: B1 is 2.25, B2 is 1.73 and B7 is 2.75, so the
+target does not hold on the reference CPU. Allocation was not measured here; the runner run below measured
 it.
 
 ## Runner (2026-11-02)
@@ -83,7 +83,7 @@ it.
 | .NET | SDK 10.0.403, runtime 10.0.14 |
 | Run date (UTC) | 2026-11-02T14:26:49Z |
 
-The reference-machine C# numbers in the last column were measured on 2026-11-16 with .NET 10 on a
+The reference-machine C# numbers in the last column were measured on 2026-11-20 with .NET 10 on a
 12th Gen Intel Core i5-12500H, Windows 11, Ultimate Performance, pinned to logical CPU 2.
 
 ## How to read the table
@@ -100,14 +100,14 @@ The reference-machine C# numbers in the last column were measured on 2026-11-16 
 
 | ID | Operation | p50 ns/op | p90 ns/op | NepDate mallocs/op | C# .NET 10 ns/op, same runner | ratio Swift/C# | C# ns/op, reference machine |
 |---|---|---:|---:|---:|---:|---:|---:|
-| B1 | BS to AD | 20.2 | 24.7 | 0 | 21.9 | 0.92 | 13.27 |
-| B2 | AD to BS | 16.9 | 26.0 | 0 | 29.6 | 0.57 | 18.70 |
-| B3 | add 1000 days | 17.6 | 26.7 | 0 | 28.6 | 0.62 | 20.06 |
-| B4 | add 13 months, clamp | 19.5 | 36.5 | 0 | 16.9 | 1.16 | 19.30 |
-| B5 | long format, Nepali, weekday | 421.9 | 984.4 | 1 | 215.1 | 1.96 | 139.04 |
-| B6 | strict parse | 32.6 | 76.2 | 0 | 29.9 | 1.09 | 21.13 |
-| B7 | patro info | 38.4 | 54.7 | 0 | 50.6 | 0.76 | 48.63 |
-| B8 | patro month grid | 1,468.8 | 2,937.5 | 0 | 3,356.3 | 0.44 | 3,274.50 |
+| B1 | BS to AD | 20.2 | 24.7 | 0 | 21.9 | 0.92 | 5.60 |
+| B2 | AD to BS | 16.9 | 26.0 | 0 | 29.6 | 0.57 | 5.90 |
+| B3 | add 1000 days | 17.6 | 26.7 | 0 | 28.6 | 0.62 | 2.79 |
+| B4 | add 13 months, clamp | 19.5 | 36.5 | 0 | 16.9 | 1.16 | 2.45 |
+| B5 | long format, Nepali, weekday | 421.9 | 984.4 | 1 | 215.1 | 1.96 | 29.96 |
+| B6 | strict parse | 32.6 | 76.2 | 0 | 29.9 | 1.09 | 7.28 |
+| B7 | patro info | 38.4 | 54.7 | 0 | 50.6 | 0.76 | 16.46 |
+| B8 | patro month grid | 1,468.8 | 2,937.5 | 0 | 3,356.3 | 0.44 | 633.13 |
 
 B5 allocates the returned string, one per operation. B5a is the same format into a reused buffer:
 
