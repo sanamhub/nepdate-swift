@@ -4,9 +4,5 @@ DerivedData/
 *.xcodeproj/xcuserdata/
 Package.resolved
 
-# .NET build output of the vendored C# benchmark
-bin/
-obj/
-
 # Python bytecode of the benchmark scripts
 __pycache__/

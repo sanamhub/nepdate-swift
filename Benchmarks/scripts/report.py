@@ -1,17 +1,15 @@
 #!/usr/bin/env python3
-"""Join package-benchmark percentile exports with the BenchmarkDotNet CSV of the same runner.
+"""Turn package-benchmark percentile exports into the Markdown report tables.
 
 The Swift benchmarks iterate all 64 inputs per iteration (package-benchmark's scaling factor is a
 power of 1,000, so `.one` leaves the value per iteration), so every wall-clock value is divided by
-64. BenchmarkDotNet is configured with OperationsPerInvoke = 64 and already reports per operation.
+64.
 
 Usage:
-  python3 ratio.py --swift-dir results/nepdate --csharp results/csharp/results/*-report.csv
-                   [--competitors-dir results/competitors]
+  python3 report.py --swift-dir results/nepdate [--competitors-dir results/competitors]
 """
 
 import argparse
-import csv
 import glob
 import os
 import re
@@ -68,31 +66,6 @@ def swift_results(directory):
     return results
 
 
-def number_with_unit(text):
-    """BenchmarkDotNet writes values with their unit in the cell, for example '3,698.11 ns'."""
-    match = re.match(
-        r"^\s*([0-9]+(?:\.[0-9]+)?)\s*([A-Za-z\u00b5\u03bc]+)?\s*$", (text or "").replace(",", ""))
-    if not match:
-        return None
-    return to_ns(float(match.group(1)), (match.group(2) or "ns").strip())
-
-
-def csharp_results(path):
-    """{ID: mean ns/op} from the BenchmarkDotNet CSV."""
-    results = {}
-    with open(path, newline="", encoding="utf-8-sig") as stream:
-        for row in csv.DictReader(stream):
-            # BenchmarkDotNet writes the Method cell as 'B1 BS to AD', quotes included.
-            method = (row.get("Method") or "").strip().strip("'\"")
-            match = re.match(r"^(B[0-9]+)\b", method)
-            if not match:
-                continue
-            mean = number_with_unit(row.get("Mean"))
-            if mean is not None:
-                results[match.group(1)] = mean
-    return results
-
-
 def format_number(value, digits=1):
     return f"{value:,.{digits}f}"
 
@@ -100,25 +73,20 @@ def format_number(value, digits=1):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--swift-dir", required=True)
-    parser.add_argument("--csharp", required=True)
     parser.add_argument("--competitors-dir")
     arguments = parser.parse_args()
 
     swift = swift_results(arguments.swift_dir)
-    csharp = csharp_results(arguments.csharp)
     if not swift:
-        print("ratio: no Swift results in", arguments.swift_dir, file=sys.stderr)
-        return 1
-    if not csharp:
-        print("ratio: no C# results in", arguments.csharp, file=sys.stderr)
+        print("report: no Swift results in", arguments.swift_dir, file=sys.stderr)
         return 1
 
     # The harness allocates 16 times per iteration on Linux (the Baseline benchmark, the same loop
     # with no NepDate call), so subtract it to get NepDate's own mallocs.
     baseline = swift.get("Baseline", {}).get("malloc", (16.0, 16.0))[0]
 
-    print("| ID | Swift p50 ns/op | Swift p90 ns/op | NepDate mallocs/op | C# .NET 10 ns/op | ratio Swift/C# |")
-    print("|---|---:|---:|---:|---:|---:|")
+    print("| ID | Swift p50 ns/op | Swift p90 ns/op | NepDate mallocs/op |")
+    print("|---|---:|---:|---:|")
     for identifier in IDS:
         result = swift.get(identifier)
         if not result or "wall" not in result:
@@ -127,11 +95,8 @@ def main():
         p90 = result["wall"][1] / OPS_PER_ITERATION
         harness = result.get("malloc", (baseline, baseline))[0]
         mallocs = max(0.0, (harness - baseline) / OPS_PER_ITERATION)
-        csharp_ns = csharp.get(identifier)
-        ratio = f"{p50 / csharp_ns:.2f}" if csharp_ns else "n/a"
         print(
-            f"| {identifier} | {format_number(p50)} | {format_number(p90)} | {mallocs:.0f} | "
-            f"{format_number(csharp_ns) if csharp_ns else 'n/a'} | {ratio} |"
+            f"| {identifier} | {format_number(p50)} | {format_number(p90)} | {mallocs:.0f} |"
         )
 
     extras = [name for name in ("B5a", "B7-sorted", "MonthRange") if name in swift]
