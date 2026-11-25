@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
-"""Median over interleaved rounds for a base and a head checkout, with the C# number on that runner.
+"""Median over interleaved rounds for a base and a head checkout.
 
 Directory layout produced by .github/workflows/perf-compare.yml:
   results/base/<round>/*.histogram.percentiles.tsv
   results/head/<round>/*.histogram.percentiles.tsv
-  results/csharp/results/*-report.csv
 
 Usage:
-  python3 ab.py --base results/base --head results/head --csharp results/csharp/results/x.csv
+  python3 ab.py --base results/base --head results/head
 """
 
 import argparse
@@ -18,7 +17,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from ratio import OPS_PER_ITERATION, csharp_results, format_number, swift_results
+from report import OPS_PER_ITERATION, format_number, swift_results
 
 
 def rounds(directory):
@@ -41,12 +40,10 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--base", required=True)
     parser.add_argument("--head", required=True)
-    parser.add_argument("--csharp", required=True)
     arguments = parser.parse_args()
 
     base = rounds(arguments.base)
     head = rounds(arguments.head)
-    csharp = csharp_results(arguments.csharp)
     if len(base) != len(head) or not base:
         print("ab: the base and head round counts differ or are empty", file=sys.stderr)
         return 1
@@ -60,9 +57,9 @@ def main():
     print()
     print(
         "| Benchmark | base p50 | head p50 | change | base p90 | head p90 | "
-        "base mallocs | head mallocs | C# same runner | base/C# | head/C# |"
+        "base mallocs | head mallocs |"
     )
-    print("|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|")
+    print("|---|---:|---:|---:|---:|---:|---:|---:|")
 
     for name in names:
         base_p50 = median_of(base, name, "wall", 0)
@@ -77,16 +74,12 @@ def main():
         base_ops = base_p50 / OPS_PER_ITERATION
         head_ops = head_p50 / OPS_PER_ITERATION
         change = (head_ops - base_ops) / base_ops * 100 if base_ops else 0.0
-        csharp_ns = csharp.get(name)
-        base_ratio = f"{base_ops / csharp_ns:.2f}" if csharp_ns else "n/a"
-        head_ratio = f"{head_ops / csharp_ns:.2f}" if csharp_ns else "n/a"
         print(
             f"| {name} | {format_number(base_ops)} | {format_number(head_ops)} | "
             f"{change:+.1f} % | {format_number(base_p90 / OPS_PER_ITERATION)} | "
             f"{format_number(head_p90 / OPS_PER_ITERATION)} | "
             f"{max(0.0, (base_malloc - baseline) / OPS_PER_ITERATION):.0f} | "
-            f"{max(0.0, (head_malloc - baseline) / OPS_PER_ITERATION):.0f} | "
-            f"{format_number(csharp_ns) if csharp_ns else 'n/a'} | {base_ratio} | {head_ratio} |"
+            f"{max(0.0, (head_malloc - baseline) / OPS_PER_ITERATION):.0f} |"
         )
     return 0
 

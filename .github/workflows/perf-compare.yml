@@ -1,6 +1,6 @@
 name: perf-compare
 
-# Old against new, interleaved, on the same runner, with the C# baseline on that runner.
+# Old against new, interleaved, on the same runner.
 # The base ref is checked out into a git worktree next to the dispatch ref, so both sides are built
 # from a clean tree. Each round runs base then head, and the raw per-round exports are kept.
 on:
@@ -39,9 +39,6 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
-      - uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
-        with:
-          dotnet-version: 10.0.x
       - name: Prepare the base worktree
         shell: bash
         env:
@@ -82,7 +79,6 @@ jobs:
               nproc
             fi
             swift --version
-            dotnet --version
           } | tee results/machine.txt
       - name: Interleaved base and head
         shell: bash
@@ -111,12 +107,6 @@ jobs:
               benchmark --no-progress --target NepDateBenchmarks --filter "$FILTER" \
               --format histogramPercentiles --path "$GITHUB_WORKSPACE/results/head/$round"
           done
-      - name: C# baseline on the same runner
-        shell: bash
-        run: |
-          set -euo pipefail
-          dotnet run -c Release -f net10.0 --project Benchmarks/Vendor/dotnet-bench -- \
-            --filter "*" --artifacts "$GITHUB_WORKSPACE/results/csharp"
       - name: B5 allocation profile (Linux)
         if: runner.os == 'Linux'
         shell: bash
@@ -144,9 +134,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          csv="$(find results/csharp -name '*-report.csv' | head -n 1)"
           python3 Benchmarks/scripts/ab.py \
-            --base results/base --head results/head --csharp "$csv" | tee results/ab.md
+            --base results/base --head results/head | tee results/ab.md
           cat results/ab.md >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()

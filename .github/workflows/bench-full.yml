@@ -2,8 +2,7 @@ name: bench-full
 
 # The numbers in docs/benchmarks.md. package-benchmark supports Linux and macOS
 # only (BENCHMARK §1) and the reference machine is Windows, so the Swift numbers come from these
-# GitHub runners, never from the reference machine's column. The C# NepDate baseline runs on the
-# same runner, which is what the ratio uses.
+# GitHub runners, never from the reference machine's column.
 on:
   workflow_dispatch:
 
@@ -23,9 +22,6 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
-        with:
-          dotnet-version: 10.0.x
       - name: Machine and toolchains
         shell: bash
         env:
@@ -48,8 +44,6 @@ jobs:
             fi
             swift --version
             xcodebuild -version 2>/dev/null || true
-            dotnet --version
-            dotnet --list-runtimes
           } | tee results/machine.txt
       - name: Swift benchmarks, our operations
         shell: bash
@@ -67,13 +61,6 @@ jobs:
             --allow-writing-to-directory "$GITHUB_WORKSPACE/results" \
             benchmark --no-progress --target CompetitorBenchmarks \
             --format histogramPercentiles --path "$GITHUB_WORKSPACE/results/competitors"
-      - name: C# NepDate baseline on the same runner
-        shell: bash
-        run: |
-          set -euo pipefail
-          dotnet run -c Release -f net10.0 --project Benchmarks/Vendor/dotnet-bench -- \
-            --filter "*" --artifacts "$GITHUB_WORKSPACE/results/csharp"
-          find results/csharp -name '*-report.csv' -print
       - name: Stripped arm64 binary sizes (macOS)
         if: runner.os == 'macOS'
         shell: bash
@@ -90,16 +77,14 @@ jobs:
           patro="$(awk '$1=="with-patro"{print $2}' results/size.txt)"
           echo "core-only minus baseline: $((core - baseline)) bytes" | tee -a results/size.txt
           echo "with-patro minus baseline: $((patro - baseline)) bytes" | tee -a results/size.txt
-      - name: Ratio, Swift over C#
+      - name: Report tables
         shell: bash
         run: |
           set -euo pipefail
-          csv="$(find results/csharp -name '*-report.csv' | head -n 1)"
-          python3 Benchmarks/scripts/ratio.py \
+          python3 Benchmarks/scripts/report.py \
             --swift-dir results/nepdate \
-            --csharp "$csv" \
-            --competitors-dir results/competitors | tee results/ratio.md
-          cat results/ratio.md >> "$GITHUB_STEP_SUMMARY"
+            --competitors-dir results/competitors | tee results/report.md
+          cat results/report.md >> "$GITHUB_STEP_SUMMARY"
       - name: Competitor agreement, a test and not a timing
         if: always()
         shell: bash
