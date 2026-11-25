@@ -234,7 +234,7 @@ do {
 | Topic | Where |
 |---|---|
 | Every public symbol | [docs/API.md](https://github.com/sanamhub/nepdate-swift/blob/main/docs/API.md) |
-| Speed and allocations, against the other Swift libraries and C# NepDate | [docs/benchmarks.md](https://github.com/sanamhub/nepdate-swift/blob/main/docs/benchmarks.md) |
+| Speed and allocations, against the other Swift libraries | [docs/benchmarks.md](https://github.com/sanamhub/nepdate-swift/blob/main/docs/benchmarks.md) |
 | The other Swift libraries | [docs/competitors.md](https://github.com/sanamhub/nepdate-swift/blob/main/docs/competitors.md) |
 | Why it is built this way | [docs/adr/](https://github.com/sanamhub/nepdate-swift/blob/main/docs/adr/README.md) |
 | The algorithm and data shared by every port | [shared/spec/](https://github.com/sanamhub/nepdate-swift/blob/main/shared/spec/README.md) |
