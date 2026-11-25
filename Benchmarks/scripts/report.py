@@ -78,7 +78,7 @@ def main():
 
     swift = swift_results(arguments.swift_dir)
     if not swift:
-        print("ratio: no Swift results in", arguments.swift_dir, file=sys.stderr)
+        print("report: no Swift results in", arguments.swift_dir, file=sys.stderr)
         return 1
 
     # The harness allocates 16 times per iteration on Linux (the Baseline benchmark, the same loop
