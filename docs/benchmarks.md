@@ -88,7 +88,7 @@ measured here; the runner run below measured it.
 
 ## Results on the runner
 
-The comparison with other NepDate ports, C# included, and the target check from `spec/BENCHMARK.md` section 6 are in the hub: [performance page](https://nepdate.com/docs/project/performance/).
+The comparison with C# NepDate, the original library, and the target check from `spec/BENCHMARK.md` section 6 are in the hub: [performance page](https://nepdate.com/docs/project/performance/).
 
 | ID | Operation | p50 ns/op | p90 ns/op | NepDate mallocs/op |
 |---|---|---:|---:|---:|
